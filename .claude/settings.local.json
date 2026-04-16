@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(ls C:/Users/PC/Desktop/autokos-launch/.env*)",
+      "Bash(xargs -I{} grep -L \"export const dynamic\" {})",
+      "Bash(npx tsc:*)",
+      "Bash(grep -n \"todayRevenue\\\\|todayBookings\\\\|pendingBookings\\\\|/admin/bookings/\\\\`\" src/app/\\\\\\(admin\\\\\\)/admin/dashboard/page.tsx)",
+      "Bash(xargs grep:*)",
+      "Bash(taskkill /f /im node.exe)",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Write-Output 'Cleared .next'\")",
+      "Read(//c/Users/PC/Desktop/**)",
+      "Bash(powershell -Command \"Compress-Archive -Path 'autokos-launch' -DestinationPath 'autokos-launch-final.zip' -Force -CompressionLevel Optimal; Write-Output \\('ZIP size: ' + [math]::Round\\(\\(Get-Item autokos-launch-final.zip\\).Length / 1MB, 2\\) + ' MB'\\)\")",
+      "Bash(powershell -Command ':*)",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue\")",
+      "Bash(node -e \"require\\('stripe'\\); console.log\\('stripe ok'\\)\")",
+      "Bash(node -e \"require\\('@stripe/stripe-js'\\); console.log\\('stripe-js ok'\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_x'\\); console.log\\('latest api:', s.getApiField\\('version'\\)\\)\")",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(Object.keys\\(s.PACKAGE_VERSION || s\\)\\)\")",
+      "Bash(find \"C:\\\\Users\\\\PC\\\\Desktop\\\\autokos-launch\\\\src\" -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"buildPriceBreakdown\\\\|buildExtraLineItems\" {} \\\\;)",
+      "Bash(xargs cat:*)",
+      "Bash(cat src/app/api/admin/users/[id]/route.ts)"
+    ]
+  }
+}

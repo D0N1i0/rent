@@ -1,0 +1,619 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  REJECTED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+  WAIVED
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum ExtraPricingType {
+  ONE_TIME
+  PER_DAY
+  PER_BOOKING
+}
+
+enum ContentBlockType {
+  HERO
+  FEATURED_CARS
+  WHY_CHOOSE_US
+  HOW_IT_WORKS
+  CATEGORIES
+  AIRPORT_SECTION
+  LONG_TERM_SECTION
+  TESTIMONIALS
+  TRUST_INDICATORS
+  OFFERS_SECTION
+  FAQ_PREVIEW
+  CONTACT_CTA
+  CUSTOM
+}
+
+// ─── USER & AUTH ──────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailVerified   DateTime?
+  passwordHash    String?
+  firstName       String?
+  lastName        String?
+  phone           String?
+  dateOfBirth     DateTime?
+  nationality     String?
+  idNumber        String?   @unique
+  licenseNumber   String?   @unique
+  address         String?
+  city            String?
+  country         String?
+  role            Role      @default(CUSTOMER)
+  isActive        Boolean   @default(true)
+  saveProfileData Boolean   @default(true)
+  avatarUrl       String?
+  notes           String?   // admin-only notes
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bookings         Booking[]
+  favoriteCarIds   String[]
+  passwordResets   PasswordReset[]
+  sessions         Session[]
+  accounts         Account[]
+  activityLogs     ActivityLog[]
+  bookingStatusHistory BookingStatusHistory[]
+  feedback         Feedback[]
+
+  @@index([email])
+  @@index([phone])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_resets")
+}
+
+// ─── CARS ─────────────────────────────────────────────────────────────────────
+
+model CarCategory {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  iconUrl     String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+  cars        Car[]
+
+  @@map("car_categories")
+}
+
+model Car {
+  id                String           @id @default(cuid())
+  slug              String           @unique
+  name              String
+  brand             String
+  model             String
+  year              Int
+  licensePlate      String?   @unique
+  vin               String?   @unique  // Vehicle Identification Number
+  categoryId        String
+  category          CarCategory      @relation(fields: [categoryId], references: [id])
+  transmission      TransmissionType
+  fuelType          FuelType
+  seats             Int
+  doors             Int              @default(4)
+  luggageSmall      Int              @default(1)
+  luggageLarge      Int              @default(1)
+  hasAC             Boolean          @default(true)
+  hasBluetooth      Boolean          @default(false)
+  hasGPS            Boolean          @default(false)
+  hasUSB            Boolean          @default(false)
+  hasChildSeat      Boolean          @default(false)
+  mileageLimit      Int?             // km per day, null = unlimited
+  extraKmFee        Float?
+  fuelPolicy        String?          @default("Full to Full")
+  minAge            Int              @default(21)
+  licenseYears      Int              @default(1)
+  description       String?
+  shortDescription  String?
+  features          String[]
+  // Pricing
+  pricePerDay       Float
+  pricePerWeek      Float?
+  pricePerMonth     Float?
+  deposit           Float            @default(200)
+  // Status
+  isActive          Boolean          @default(true)
+  isFeatured        Boolean          @default(false)
+  sortOrder         Int              @default(0)
+  // SEO
+  metaTitle         String?
+  metaDescription   String?
+  // Analytics
+  viewCount         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  images            CarImage[]
+  bookings          Booking[]
+  availabilityBlocks AvailabilityBlock[]
+  seasonalPricing   SeasonalPricing[]
+
+  @@index([isActive, isFeatured])
+  @@index([categoryId])
+  @@map("cars")
+}
+
+model CarImage {
+  id        String  @id @default(cuid())
+  carId     String
+  car       Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  @@index([carId])
+  @@map("car_images")
+}
+
+model SeasonalPricing {
+  id           String   @id @default(cuid())
+  carId        String
+  car          Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  pricePerDay  Float
+  pricePerWeek Float?
+  isActive     Boolean  @default(true)
+
+  @@index([carId])
+  @@map("seasonal_pricing")
+}
+
+model AvailabilityBlock {
+  id        String   @id @default(cuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([carId])
+  @@map("availability_blocks")
+}
+
+// ─── LOCATIONS ────────────────────────────────────────────────────────────────
+
+model Location {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  address        String?
+  city           String
+  isAirport      Boolean  @default(false)
+  pickupFee      Float    @default(0)
+  dropoffFee     Float    @default(0)
+  isPickupPoint  Boolean  @default(true)
+  isDropoffPoint Boolean  @default(true)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  description    String?
+  coordinates    String?
+
+  pickupBookings  Booking[] @relation("PickupLocation")
+  dropoffBookings Booking[] @relation("DropoffLocation")
+
+  @@map("locations")
+}
+
+// ─── EXTRAS ───────────────────────────────────────────────────────────────────
+
+model Extra {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  iconUrl     String?
+  pricingType ExtraPricingType @default(PER_DAY)
+  price       Float
+  isActive    Boolean          @default(true)
+  sortOrder   Int              @default(0)
+
+  bookingExtras BookingExtra[]
+
+  @@map("extras")
+}
+
+// ─── BOOKINGS ─────────────────────────────────────────────────────────────────
+
+model Booking {
+  id                String        @id @default(cuid())
+  bookingRef        String        @unique
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id])
+  carId             String
+  car               Car           @relation(fields: [carId], references: [id])
+  pickupLocationId  String
+  pickupLocation    Location      @relation("PickupLocation", fields: [pickupLocationId], references: [id])
+  dropoffLocationId String
+  dropoffLocation   Location      @relation("DropoffLocation", fields: [dropoffLocationId], references: [id])
+  pickupDateTime    DateTime
+  dropoffDateTime   DateTime
+  durationDays      Int
+
+  // Customer snapshot (preserved even if user updates profile)
+  guestFirstName    String?
+  guestLastName     String?
+  guestEmail        String?
+  guestPhone        String?
+  guestIdNumber     String?
+  guestLicense      String?
+  guestNationality  String?
+
+  // Pricing snapshot (locked at booking time)
+  basePricePerDay   Float
+  pricingTier       String        @default("daily") // daily | weekly | monthly | seasonal
+  subtotal          Float
+  extrasTotal       Float         @default(0)
+  pickupFee         Float         @default(0)
+  dropoffFee        Float         @default(0)
+  discount          Float         @default(0)
+  vatRate           Float         @default(0)    // e.g. 0.18 for 18% Kosovo VAT
+  vatAmount         Float         @default(0)    // VAT amount snapshot
+  cancellationFee   Float         @default(0)    // fee applied on cancellation
+  depositAmount     Float
+  totalAmount       Float         // total including VAT
+
+  // Document uploads (licence/ID submitted during booking)
+  documentLicenseUrl String?
+  documentIdUrl      String?
+
+  // Status
+  status            BookingStatus @default(PENDING)
+  paymentStatus     PaymentStatus @default(UNPAID)
+  paymentMethod     String?       // cash | card | bank_transfer | online
+
+  // Stripe payment tracking
+  stripePaymentIntentId String?   @unique
+  stripeClientSecret    String?
+
+  // Lifecycle timestamps
+  confirmedAt       DateTime?
+  pickedUpAt        DateTime?     // actual pickup time
+  returnedAt        DateTime?     // actual return time
+  cancelledAt       DateTime?
+  completedAt       DateTime?
+  rejectedAt        DateTime?
+
+  // Operational fields
+  specialRequests   String?
+  internalNotes     String?
+  adminNotes        String?       // separate admin-only notes
+  couponCode        String?
+  cancellationReason String?
+  rejectionReason   String?
+  extensionDays     Int?          // if rental was extended
+  extensionApproved Boolean?
+  actualReturnMileage Int?
+  damageNoted       Boolean       @default(false)
+  damageDescription String?
+  depositReturned   Boolean       @default(false)
+  depositReturnedAt DateTime?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  extras            BookingExtra[]
+  statusHistory     BookingStatusHistory[]
+
+  @@index([userId])
+  @@index([carId])
+  @@index([status])
+  @@index([pickupDateTime])
+  @@index([bookingRef])
+  @@map("bookings")
+}
+
+model BookingStatusHistory {
+  id          String        @id @default(cuid())
+  bookingId   String
+  booking     Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromStatus  BookingStatus?
+  toStatus    BookingStatus
+  reason      String?
+  changedById String?
+  changedBy   User?         @relation(fields: [changedById], references: [id])
+  createdAt   DateTime      @default(now())
+
+  @@index([bookingId])
+  @@map("booking_status_history")
+}
+
+model BookingExtra {
+  id          String  @id @default(cuid())
+  bookingId   String
+  booking     Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  extraId     String
+  extra       Extra   @relation(fields: [extraId], references: [id])
+  name        String  // snapshot
+  price       Float   // snapshot
+  pricingType ExtraPricingType
+  quantity    Int     @default(1)
+  total       Float
+
+  @@map("booking_extras")
+}
+
+// ─── CONTENT ──────────────────────────────────────────────────────────────────
+
+model HomepageBlock {
+  id        String           @id @default(cuid())
+  type      ContentBlockType
+  title     String?
+  subtitle  String?
+  content   Json?
+  isActive  Boolean          @default(true)
+  sortOrder Int              @default(0)
+  updatedAt DateTime         @updatedAt
+
+  @@map("homepage_blocks")
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  name       String
+  location   String?
+  avatarUrl  String?
+  rating     Int      @default(5)
+  content    String
+  isActive   Boolean  @default(true)
+  isFeatured Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@map("testimonials")
+}
+
+model FaqItem {
+  id         String  @id @default(cuid())
+  question   String
+  answer     String
+  category   String? @default("general")
+  isActive   Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  @@map("faq_items")
+}
+
+model Offer {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  code            String?   @unique
+  discountPct     Float?
+  discountAmt     Float?
+  imageUrl        String?
+  validFrom       DateTime?
+  validUntil      DateTime?
+  minSubtotal     Float?    // minimum booking subtotal (before discount) required
+  minRentalDays   Int?      // minimum rental duration in days required
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+
+  @@map("offers")
+}
+
+model LegalPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  content   String
+  updatedAt DateTime @updatedAt
+
+  @@map("legal_pages")
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+  @@map("contact_submissions")
+}
+
+// ─── SITE SETTINGS ────────────────────────────────────────────────────────────
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  group     String   @default("general")
+  label     String?
+  type      String   @default("text")
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model SeoMetadata {
+  id              String   @id @default(cuid())
+  page            String   @unique
+  title           String?
+  description     String?
+  keywords        String?
+  ogTitle         String?
+  ogDescription   String?
+  ogImageUrl      String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("seo_metadata")
+}
+
+// ─── MEDIA ────────────────────────────────────────────────────────────────────
+
+model MediaFile {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  alt       String?
+  folder    String?
+  createdAt DateTime @default(now())
+
+  @@map("media_files")
+}
+
+// ─── FEEDBACK ─────────────────────────────────────────────────────────────────
+
+enum FeedbackType {
+  COMPLAINT
+  SUGGESTION
+  FEATURE_REQUEST
+  BUG_REPORT
+  OTHER
+}
+
+enum FeedbackStatus {
+  NEW
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model Feedback {
+  id          String         @id @default(cuid())
+  userId      String?
+  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String?
+  email       String?
+  type        FeedbackType   @default(OTHER)
+  subject     String
+  message     String
+  status      FeedbackStatus @default(NEW)
+  adminNotes  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("feedback")
+}
+
+// ─── AUDIT ────────────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entity     String?
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}

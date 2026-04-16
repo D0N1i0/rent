@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" fill="none">
+  <rect width="400" height="250" fill="#f1f5f9"/>
+  <rect x="60" y="100" width="280" height="90" rx="8" fill="#cbd5e1"/>
+  <rect x="100" y="70" width="200" height="70" rx="6" fill="#94a3b8"/>
+  <circle cx="120" cy="195" r="25" fill="#64748b"/>
+  <circle cx="120" cy="195" r="12" fill="#f1f5f9"/>
+  <circle cx="280" cy="195" r="25" fill="#64748b"/>
+  <circle cx="280" cy="195" r="12" fill="#f1f5f9"/>
+  <text x="200" y="235" text-anchor="middle" fill="#94a3b8" font-size="12" font-family="sans-serif">AutoKos</text>
+</svg>
