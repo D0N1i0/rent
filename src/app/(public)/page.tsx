@@ -14,7 +14,19 @@ import { getPublicSettings } from "@/lib/settings";
 
 async function getHomeData() {
   const [featuredCars, testimonials, offers, faqItems, locations, homepageSettings, settings] = await Promise.all([
-    prisma.car.findMany({ where: { isFeatured: true, isActive: true }, include: { images: { where: { isPrimary: true } }, category: true }, orderBy: { sortOrder: "asc" }, take: 6 }),
+    prisma.car.findMany({
+      where: { isFeatured: true, isActive: true },
+      select: {
+        id: true, slug: true, name: true, brand: true, model: true, year: true,
+        seats: true, transmission: true, fuelType: true, hasAC: true,
+        isFeatured: true, pricePerDay: true, pricePerWeek: true, pricePerMonth: true,
+        mileageLimit: true,
+        images: { where: { isPrimary: true }, select: { id: true, url: true, alt: true, isPrimary: true } },
+        category: { select: { id: true, name: true, slug: true } },
+      },
+      orderBy: { sortOrder: "asc" },
+      take: 6,
+    }),
     prisma.testimonial.findMany({ where: { isActive: true, isFeatured: true }, orderBy: { sortOrder: "asc" }, take: 6 }),
     prisma.offer.findMany({ where: { isActive: true, OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }] }, orderBy: { sortOrder: "asc" }, take: 4 }),
     prisma.faqItem.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, take: 6 }),

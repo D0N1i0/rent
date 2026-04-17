@@ -12,6 +12,7 @@ import { CityInput } from "@/components/ui/city-input";
 import { Save, Loader2, CheckCircle, AlertCircle, User, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 /** Format date string to human-readable (e.g. "15 April 1990"). */
 function formatDOBDisplay(iso: string) {
@@ -31,6 +32,8 @@ function maxDOBDate(): string {
 
 export default function ProfilePage() {
   const { data: session } = useSession();
+  const t = useT();
+  const { locale } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
@@ -88,14 +91,14 @@ export default function ProfilePage() {
       });
       const result = await res.json();
       if (!res.ok) {
-        setErrorMsg(result.error ?? "Failed to save profile");
+        setErrorMsg(result.error ?? t.common.errorOccurred);
         setStatus("error");
         return;
       }
       setStatus("success");
       setTimeout(() => setStatus("idle"), 4000);
     } catch {
-      setErrorMsg("Something went wrong. Please try again.");
+      setErrorMsg(t.common.errorOccurred);
       setStatus("error");
     } finally {
       setSaving(false);
@@ -131,12 +134,12 @@ export default function ProfilePage() {
       <div className="bg-white border-b border-gray-100">
         <div className="page-container py-8">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-navy-900 mb-3 transition-colors">
-            <ChevronLeft className="h-4 w-4" /> Back to Dashboard
+            <ChevronLeft className="h-4 w-4" /> {locale === "al" ? "Kthehu te Paneli" : "Back to Dashboard"}
           </Link>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-navy-900 flex items-center gap-3">
-            <User className="h-7 w-7 text-gray-400" /> My Profile
+            <User className="h-7 w-7 text-gray-400" /> {t.profile.title}
           </h1>
-          <p className="text-gray-500 mt-1">Keep your details up to date for faster bookings</p>
+          <p className="text-gray-500 mt-1">{locale === "al" ? "Mbani të dhënat tuaja të përditësuara për rezervime më të shpejta" : "Keep your details up to date for faster bookings"}</p>
         </div>
       </div>
 
@@ -150,21 +153,21 @@ export default function ProfilePage() {
         {status === "success" && (
           <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-5 flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-sm text-green-700">Profile saved successfully!</p>
+            <p className="text-sm text-green-700">{t.profile.saveSuccess}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Personal information */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="font-bold text-navy-900 mb-5">Personal Information</h2>
+            <h2 className="font-bold text-navy-900 mb-5">{t.profile.personalInfo}</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <TextField id="firstName" label="First Name" required type="text" autoComplete="given-name" error={errors.firstName?.message} {...register("firstName")} />
-              <TextField id="lastName" label="Last Name" required type="text" autoComplete="family-name" error={errors.lastName?.message} {...register("lastName")} />
+              <TextField id="firstName" label={t.auth.firstNameLabel} required type="text" autoComplete="given-name" error={errors.firstName?.message} {...register("firstName")} />
+              <TextField id="lastName" label={t.auth.lastNameLabel} required type="text" autoComplete="family-name" error={errors.lastName?.message} {...register("lastName")} />
 
               {/* Phone input with country code */}
               <div>
-                <FieldLabel htmlFor="phone" label="Phone Number" />
+                <FieldLabel htmlFor="phone" label={t.auth.phoneLabel} />
                 <Controller
                   name="phone"
                   control={control}
@@ -181,7 +184,7 @@ export default function ProfilePage() {
 
               {/* Date of Birth */}
               <div>
-                <FieldLabel htmlFor="dateOfBirth" label="Date of Birth (18+ required)" />
+                <FieldLabel htmlFor="dateOfBirth" label={`${t.profile.dateOfBirth} (18+ required)`} />
                 <input
                   id="dateOfBirth"
                   type="date"
@@ -197,7 +200,7 @@ export default function ProfilePage() {
 
               {/* Nationality dropdown */}
               <div>
-                <FieldLabel htmlFor="nationality" label="Nationality" />
+                <FieldLabel htmlFor="nationality" label={t.auth.nationalityLabel} />
                 <Controller
                   name="nationality"
                   control={control}
@@ -216,7 +219,7 @@ export default function ProfilePage() {
 
               {/* Country of Residence dropdown */}
               <div>
-                <FieldLabel htmlFor="country" label="Country of Residence" />
+                <FieldLabel htmlFor="country" label={t.profile.country} />
                 <Controller
                   name="country"
                   control={control}
@@ -239,22 +242,22 @@ export default function ProfilePage() {
 
           {/* Documents */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="font-bold text-navy-900 mb-1">Documents</h2>
-            <p className="text-sm text-gray-500 mb-4">Required when you pick up the car. Add them now to speed up the process.</p>
+            <h2 className="font-bold text-navy-900 mb-1">{t.profile.drivingInfo}</h2>
+            <p className="text-sm text-gray-500 mb-4">{locale === "al" ? "Kërkohet kur merrni makinën. Shtojini tani për të shpejtuar procesin." : "Required when you pick up the car. Add them now to speed up the process."}</p>
             <div className="grid sm:grid-cols-2 gap-4">
-              <TextField id="idNumber" label="Passport / National ID Number" type="text" error={errors.idNumber?.message} {...register("idNumber")} />
-              <TextField id="licenseNumber" label="Driving Licence Number" type="text" error={errors.licenseNumber?.message} {...register("licenseNumber")} />
+              <TextField id="idNumber" label={t.profile.idNumber} type="text" error={errors.idNumber?.message} {...register("idNumber")} />
+              <TextField id="licenseNumber" label={t.profile.licenseNumber} type="text" error={errors.licenseNumber?.message} {...register("licenseNumber")} />
             </div>
           </div>
 
           {/* Address */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="font-bold text-navy-900 mb-4">Address</h2>
+            <h2 className="font-bold text-navy-900 mb-4">{t.profile.address}</h2>
             <div className="space-y-4">
-              <TextField id="address" label="Street Address" type="text" autoComplete="street-address" error={errors.address?.message} {...register("address")} />
+              <TextField id="address" label={t.profile.address} type="text" autoComplete="street-address" error={errors.address?.message} {...register("address")} />
               {/* City depends on selected country */}
               <div>
-                <FieldLabel htmlFor="city" label="City" />
+                <FieldLabel htmlFor="city" label={t.profile.city} />
                 <Controller
                   name="city"
                   control={control}
@@ -277,14 +280,14 @@ export default function ProfilePage() {
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" {...register("saveProfileData")} className="h-4 w-4 mt-0.5 rounded border-gray-300 text-navy-900" />
               <div>
-                <p className="font-semibold text-sm text-navy-900">Save profile data for future bookings</p>
-                <p className="text-xs text-gray-500 mt-0.5">Your details will be pre-filled in the booking form to save you time.</p>
+                <p className="font-semibold text-sm text-navy-900">{t.profile.saveProfileData}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{locale === "al" ? "Të dhënat tuaja do të plotësohen paraprakisht në formularin e rezervimit." : "Your details will be pre-filled in the booking form to save you time."}</p>
               </div>
             </label>
           </div>
 
           <button type="submit" disabled={saving} className="btn-primary w-full py-3.5 text-base">
-            {saving ? <><Loader2 className="h-5 w-5 animate-spin" /> Saving...</> : <><Save className="h-5 w-5" /> Save Profile</>}
+            {saving ? <><Loader2 className="h-5 w-5 animate-spin" /> {t.profile.saving}</> : <><Save className="h-5 w-5" /> {t.profile.saveChanges}</>}
           </button>
         </form>
       </div>

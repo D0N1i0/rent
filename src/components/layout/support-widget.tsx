@@ -6,6 +6,7 @@ import Link from "next/link";
 import { MessageCircle, X, Phone, Mail, MessageSquare, Loader2, CheckCircle, Bug, Lightbulb } from "lucide-react";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 const quickSchema = z.object({
   type: z.enum(["COMPLAINT", "SUGGESTION", "BUG_REPORT", "OTHER"]),
@@ -21,6 +22,8 @@ interface SupportWidgetProps {
 }
 
 export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = "" }: SupportWidgetProps) {
+  const t = useT();
+  const { locale } = useLanguage();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"menu" | "report" | "done">("menu");
   const [type, setType] = useState<"COMPLAINT" | "SUGGESTION" | "BUG_REPORT" | "OTHER">("OTHER");
@@ -59,7 +62,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
       });
       setView("done");
     } catch {
-      setErrors({ message: "Failed to send. Please try again." });
+      setErrors({ message: locale === "al" ? "Dërgimi dështoi. Ju lutemi provoni përsëri." : "Failed to send. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +89,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
           <div className="bg-navy-900 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-white" />
-              <span className="text-white font-semibold text-sm">Help & Support</span>
+              <span className="text-white font-semibold text-sm">{t.support.needHelp}</span>
             </div>
             <button onClick={handleClose} className="text-gray-400 hover:text-white transition-colors">
               <X className="h-4 w-4" />
@@ -95,7 +98,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
 
           {view === "menu" && (
             <div className="p-4 space-y-2">
-              <p className="text-xs text-gray-500 mb-3">How can we help you today?</p>
+              <p className="text-xs text-gray-500 mb-3">{locale === "al" ? "Si mund t'ju ndihmojmë sot?" : "How can we help you today?"}</p>
 
               {/* Quick contact options */}
               {whatsappLink && (
@@ -109,7 +112,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
                     <MessageCircle className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-green-800">WhatsApp Chat</p>
+                    <p className="font-semibold text-sm text-green-800">{t.support.whatsapp}</p>
                     <p className="text-xs text-green-600">Usually replies in minutes</p>
                   </div>
                 </a>
@@ -124,7 +127,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
                     <Phone className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-blue-800">Call Us</p>
+                    <p className="font-semibold text-sm text-blue-800">{t.support.callUs}</p>
                     <p className="text-xs text-blue-600">{phone}</p>
                   </div>
                 </a>
@@ -139,7 +142,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
                     <Mail className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-800">Email Support</p>
+                    <p className="font-semibold text-sm text-gray-800">{t.support.email}</p>
                     <p className="text-xs text-gray-500">{supportEmail}</p>
                   </div>
                 </a>
@@ -154,7 +157,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
                     <MessageSquare className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-800">Report a Problem</p>
+                    <p className="font-semibold text-sm text-gray-800">{locale === "al" ? "Raporto një Problem" : "Report a Problem"}</p>
                     <p className="text-xs text-gray-500">Send us a detailed report</p>
                   </div>
                 </button>
@@ -167,7 +170,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
                     <Lightbulb className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-800">Submit Feedback</p>
+                    <p className="font-semibold text-sm text-gray-800">{locale === "al" ? "Dërgo Feedback" : "Submit Feedback"}</p>
                     <p className="text-xs text-gray-500">Suggestions, complaints, ideas</p>
                   </div>
                 </Link>
@@ -179,16 +182,16 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
             <div className="p-4 space-y-3">
               <div className="flex items-center gap-2 mb-2">
                 <button onClick={() => setView("menu")} className="text-xs text-gray-400 hover:text-navy-900">← Back</button>
-                <p className="text-sm font-semibold text-navy-900">Report a Problem</p>
+                <p className="text-sm font-semibold text-navy-900">{locale === "al" ? "Raporto një Problem" : "Report a Problem"}</p>
               </div>
 
               {/* Type */}
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { v: "BUG_REPORT" as const, label: "Bug", icon: <Bug className="h-3.5 w-3.5" /> },
-                  { v: "COMPLAINT" as const, label: "Complaint", icon: <MessageSquare className="h-3.5 w-3.5" /> },
-                  { v: "SUGGESTION" as const, label: "Idea", icon: <Lightbulb className="h-3.5 w-3.5" /> },
-                  { v: "OTHER" as const, label: "Other", icon: <MessageCircle className="h-3.5 w-3.5" /> },
+                  { v: "BUG_REPORT" as const, label: locale === "al" ? "Raporto Bug" : "Bug Report", icon: <Bug className="h-3.5 w-3.5" /> },
+                  { v: "COMPLAINT" as const, label: locale === "al" ? "Ankesë" : "Complaint", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+                  { v: "SUGGESTION" as const, label: locale === "al" ? "Sugjerim" : "Suggestion", icon: <Lightbulb className="h-3.5 w-3.5" /> },
+                  { v: "OTHER" as const, label: locale === "al" ? "Tjetër" : "Other", icon: <MessageCircle className="h-3.5 w-3.5" /> },
                 ]).map((opt) => (
                   <button
                     key={opt.v}
@@ -207,7 +210,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
               <div>
                 <input
                   type="text"
-                  placeholder="Subject *"
+                  placeholder={locale === "al" ? "Subjekti *" : "Subject *"}
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   className={cn("form-input text-sm", errors.subject && "border-red-400")}
@@ -216,7 +219,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
               </div>
               <div>
                 <textarea
-                  placeholder="Describe the issue... *"
+                  placeholder={locale === "al" ? "Përshkruani problemin... *" : "Describe the issue... *"}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={3}
@@ -227,7 +230,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
               <div>
                 <input
                   type="email"
-                  placeholder="Your email (optional)"
+                  placeholder={locale === "al" ? "Email (opsional)" : "Your email (optional)"}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={cn("form-input text-sm", errors.email && "border-red-400")}
@@ -239,7 +242,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
                 disabled={submitting}
                 className="btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2"
               >
-                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : "Send Report"}
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke dërguar..." : "Sending..."}</> : t.common.send}
               </button>
             </div>
           )}
@@ -247,8 +250,8 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
           {view === "done" && (
             <div className="p-6 text-center">
               <CheckCircle className="h-10 w-10 text-green-500 mx-auto mb-3" />
-              <p className="font-bold text-navy-900 mb-1">Report Received!</p>
-              <p className="text-sm text-gray-500 mb-4">We'll look into this shortly. Thank you.</p>
+              <p className="font-bold text-navy-900 mb-1">{locale === "al" ? "Faleminderit!" : "Thank you!"}</p>
+              <p className="text-sm text-gray-500 mb-4">{locale === "al" ? "Mesazhi juaj u pranua." : "Your message has been received."}</p>
               <button onClick={handleClose} className="btn-secondary text-sm px-4 py-2">Close</button>
             </div>
           )}

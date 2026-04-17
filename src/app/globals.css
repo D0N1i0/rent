@@ -109,6 +109,13 @@
   }
 }
 
+@layer base {
+  /* Prevent iOS Safari from zooming in on focused form fields */
+  input, select, textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

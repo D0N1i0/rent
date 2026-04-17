@@ -10,6 +10,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2, Car, Eye, EyeOff } from "lucide-react";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 export default function LoginPage() {
   return (
@@ -25,6 +26,8 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl");
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const t = useT();
+  const { locale } = useLanguage();
 
   const {
     register,
@@ -43,7 +46,7 @@ function LoginForm() {
     });
 
     if (result?.error) {
-      setServerError("Invalid email or password. Please try again.");
+      setServerError(locale === "al" ? "Email ose fjalëkalim i pavlefshëm. Ju lutem provoni përsëri." : "Invalid email or password. Please try again.");
       return;
     }
 
@@ -79,8 +82,8 @@ function LoginForm() {
                 <span className="font-display text-2xl font-bold text-crimson-500">Kos</span>
               </div>
             </Link>
-            <h1 className="text-xl font-bold text-navy-900 mt-4">Welcome back</h1>
-            <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
+            <h1 className="text-xl font-bold text-navy-900 mt-4">{t.auth.loginTitle}</h1>
+            <p className="text-gray-500 text-sm mt-1">{t.auth.loginSubtitle}</p>
           </div>
 
           {serverError && (
@@ -93,7 +96,7 @@ function LoginForm() {
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                Email
+                {t.auth.emailLabel}
               </label>
               <input
                 id="email"
@@ -109,10 +112,10 @@ function LoginForm() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="password" className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  Password
+                  {t.auth.passwordLabel}
                 </label>
                 <Link href="/forgot-password" className="text-xs text-navy-700 hover:underline">
-                  Forgot password?
+                  {t.auth.forgotPassword}
                 </Link>
               </div>
               <div className="relative">
@@ -138,18 +141,18 @@ function LoginForm() {
             <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3 mt-2">
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke hyrë..." : "Signing in..."}
                 </>
               ) : (
-                "Sign In"
+                t.auth.loginButton
               )}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-600 mt-6">
-            Don&apos;t have an account?{" "}
+            {t.auth.noAccount}{" "}
             <Link href="/register" className="text-navy-900 font-semibold hover:underline">
-              Create one
+              {t.nav.register}
             </Link>
           </p>
         </div>

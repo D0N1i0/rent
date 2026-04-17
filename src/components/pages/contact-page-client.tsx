@@ -8,6 +8,7 @@ import { contactSchema } from "@/lib/validations/booking";
 import { z } from "zod";
 import { Phone, Mail, MapPin, Clock, MessageCircle, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 type ContactValues = z.infer<typeof contactSchema>;
 
@@ -26,6 +27,8 @@ export function ContactPageClient({
   whatsappNumber,
   businessName,
 }: ContactPageClientProps) {
+  const t = useT();
+  const { locale } = useLanguage();
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -45,23 +48,23 @@ export function ContactPageClient({
       setSent(true);
       reset();
     } catch {
-      setServerError("Failed to send message. Please try again or contact us directly.");
+      setServerError(locale === "al" ? "Dërgimi dështoi. Ju lutemi provoni përsëri ose na kontaktoni direkt." : "Failed to send message. Please try again or contact us directly.");
     }
   };
 
   const contactInfo = [
-    { icon: Phone, label: "Phone / WhatsApp", value: phone, href: `tel:${phone.replace(/\s+/g, "")}` },
-    { icon: Mail, label: "Email", value: email, href: `mailto:${email}` },
-    { icon: MapPin, label: "Office Address", value: address },
-    { icon: Clock, label: "Support Hours", value: "24 hours a day, 7 days a week" },
+    { icon: Phone, label: locale === "al" ? "Telefon / WhatsApp" : "Phone / WhatsApp", value: phone, href: `tel:${phone.replace(/\s+/g, "")}` },
+    { icon: Mail, label: locale === "al" ? "Email" : "Email", value: email, href: `mailto:${email}` },
+    { icon: MapPin, label: locale === "al" ? "Adresa" : "Office Address", value: address },
+    { icon: Clock, label: locale === "al" ? "Oraret" : "Support Hours", value: locale === "al" ? "24 orë në ditë, 7 ditë në javë" : "24 hours a day, 7 days a week" },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-navy-900 py-16">
         <div className="page-container text-center">
-          <h1 className="font-display text-4xl font-bold text-white mb-3">Get in Touch</h1>
-          <p className="text-gray-400 text-lg">We&apos;re here 24/7. Reach out anytime.</p>
+          <h1 className="font-display text-4xl font-bold text-white mb-3">{t.contactFaq.contactTitle}</h1>
+          <p className="text-gray-400 text-lg">{t.contactFaq.contactSubtitle}</p>
         </div>
       </div>
 
@@ -70,7 +73,7 @@ export function ContactPageClient({
           {/* Contact info */}
           <div className="space-y-6">
             <div>
-              <h2 className="font-bold text-2xl text-navy-900 mb-6">Contact Information</h2>
+              <h2 className="font-bold text-2xl text-navy-900 mb-6">{locale === "al" ? "Informacioni i Kontaktit" : "Contact Information"}</h2>
               <div className="space-y-4">
                 {contactInfo.map(({ icon: Icon, label, value, href }) => (
                   <div key={label} className="flex items-start gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
@@ -106,17 +109,17 @@ export function ContactPageClient({
 
           {/* Form */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
-            <h2 className="font-bold text-xl text-navy-900 mb-5">Send us a Message</h2>
+            <h2 className="font-bold text-xl text-navy-900 mb-5">{locale === "al" ? "Na Dërgoni një Mesazh" : "Send us a message"}</h2>
 
             {sent ? (
               <div className="text-center py-8">
                 <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="h-8 w-8 text-green-500" />
                 </div>
-                <h3 className="font-bold text-navy-900 mb-2">Message Sent!</h3>
-                <p className="text-gray-600 text-sm">We&apos;ll get back to you as soon as possible.</p>
+                <h3 className="font-bold text-navy-900 mb-2">{t.contactFaq.successMessage}</h3>
+                <p className="text-gray-600 text-sm">{locale === "al" ? "Do t'ju kthehemi sa më shpejt të jetë e mundur." : "We'll get back to you as soon as possible."}</p>
                 <button onClick={() => setSent(false)} className="mt-5 text-crimson-500 text-sm hover:underline">
-                  Send another message
+                  {locale === "al" ? "Dërgo një mesazh tjetër" : "Send another message"}
                 </button>
               </div>
             ) : (
@@ -130,31 +133,31 @@ export function ContactPageClient({
                 <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Name *</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.name} *</label>
                       <input type="text" placeholder="Your name" className={cn("form-input", errors.name && "border-red-400")} {...register("name")} />
                       {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Email *</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.email} *</label>
                       <input type="email" placeholder="your@email.com" className={cn("form-input", errors.email && "border-red-400")} {...register("email")} />
                       {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Phone</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.phone}</label>
                     <input type="tel" placeholder="+383 44 000 000" className="form-input" {...register("phone")} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Subject</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.subject}</label>
                     <input type="text" placeholder="How can we help?" className="form-input" {...register("subject")} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Message *</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.message} *</label>
                     <textarea rows={4} placeholder="Your message..." className={cn("form-input resize-none", errors.message && "border-red-400")} {...register("message")} />
                     {errors.message && <p className="text-xs text-red-500 mt-1">{errors.message.message}</p>}
                   </div>
                   <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3">
-                    {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : "Send Message"}
+                    {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke dërguar..." : "Sending..."}</> : t.contactFaq.sendMessage}
                   </button>
                 </form>
               </>

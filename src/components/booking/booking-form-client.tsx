@@ -16,6 +16,7 @@ import type { Car as CarType, CarImage, CarCategory, Extra, Location } from "@pr
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { CountrySelect } from "@/components/ui/country-select";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 type CarWithDetails = CarType & { images: CarImage[]; category: CarCategory };
 
@@ -41,13 +42,18 @@ interface BookingFormClientProps {
   isLoggedIn: boolean;
 }
 
-const extraPricingLabels: Record<string, string> = { PER_DAY: "/day", ONE_TIME: " (one-time)", PER_BOOKING: " (per booking)" };
-
 export function BookingFormClient({
   car, pickupLocation, dropoffLocation, allExtras, selectedExtraIds,
   pickupDate, pickupTime, returnDate, returnTime, userProfile, isLoggedIn,
 }: BookingFormClientProps) {
   const router = useRouter();
+  const t = useT();
+  const { locale } = useLanguage();
+  const extraPricingLabels: Record<string, string> = {
+    PER_DAY: locale === "al" ? "/ditë" : "/day",
+    ONE_TIME: locale === "al" ? " (njëherësh)" : " (one-time)",
+    PER_BOOKING: locale === "al" ? " (për rezervim)" : " (per booking)",
+  };
   const [serverError, setServerError] = useState<string | null>(null);
   const [selectedExtras, setSelectedExtras] = useState<string[]>(selectedExtraIds);
   const [couponCode, setCouponCode] = useState("");
@@ -173,29 +179,29 @@ export function BookingFormClient({
       <div className="bg-navy-900 py-10">
         <div className="page-container">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
-            <Link href="/fleet" className="hover:text-white transition-colors">Fleet</Link>
+            <Link href="/fleet" className="hover:text-white transition-colors">{t.nav.fleet}</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link href={`/fleet/${car.slug}`} className="hover:text-white transition-colors">{car.name}</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="text-white">Booking</span>
+            <span className="text-white">{t.booking.title}</span>
           </div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-white">Complete Your Booking</h1>
-          <p className="text-gray-400 mt-1">Review your selection and enter your details below</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-white">{t.booking.title}</h1>
+          <p className="text-gray-400 mt-1">{locale === "al" ? "Shqyrtoni zgjedhjen tuaj dhe vendosni detajet tuaja më poshtë" : "Review your selection and enter your details below"}</p>
         </div>
       </div>
 
       <div className="page-container py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main form */}
-          <div className="lg:col-span-2">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8">
+          {/* Main form — appears second on mobile, first on lg */}
+          <div className="lg:col-span-2 order-last lg:order-first">
             {!isLoggedIn && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-blue-800">Have an account?</p>
+                  <p className="font-semibold text-blue-800">{locale === "al" ? "Keni llogari?" : "Have an account?"}</p>
                   <p className="text-blue-700 mt-0.5">
-                    <Link href={`/login?callbackUrl=/booking?carId=${car.id}&pickupLocationId=${pickupLocation.id}&pickupDate=${pickupDate}&pickupTime=${pickupTime}&returnDate=${returnDate}&returnTime=${returnTime}`} className="underline font-medium">Sign in</Link>{" "}
-                    to autofill your details and save this booking to your account.
+                    <Link href={`/login?callbackUrl=/booking?carId=${car.id}&pickupLocationId=${pickupLocation.id}&pickupDate=${pickupDate}&pickupTime=${pickupTime}&returnDate=${returnDate}&returnTime=${returnTime}`} className="underline font-medium">{t.auth.loginButton}</Link>{" "}
+                    {locale === "al" ? "për të plotësuar automatikisht detajet tuaja dhe ruajtur këtë rezervim." : "to autofill your details and save this booking to your account."}
                   </p>
                 </div>
               </div>
@@ -224,13 +230,13 @@ export function BookingFormClient({
                   <div className="h-8 w-8 bg-navy-900 rounded-lg flex items-center justify-center">
                     <User className="h-4 w-4 text-white" />
                   </div>
-                  <h2 className="font-bold text-navy-900">Personal Information</h2>
+                  <h2 className="font-bold text-navy-900">{t.booking.personalInfo}</h2>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField
                     id="firstName"
-                    label="First Name"
+                    label={t.booking.firstName}
                     type="text"
                     autoComplete="given-name"
                     placeholder="John"
@@ -239,7 +245,7 @@ export function BookingFormClient({
                   />
                   <FormField
                     id="lastName"
-                    label="Last Name"
+                    label={t.booking.lastName}
                     type="text"
                     autoComplete="family-name"
                     placeholder="Doe"
@@ -248,7 +254,7 @@ export function BookingFormClient({
                   />
                   <FormField
                     id="email"
-                    label="Email Address"
+                    label={t.booking.email}
                     type="email"
                     autoComplete="email"
                     placeholder="john@example.com"
@@ -257,7 +263,7 @@ export function BookingFormClient({
                   />
                   <div>
                     <label htmlFor="phone" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                      Phone Number<span className="text-crimson-500 ml-0.5">*</span>
+                      {t.booking.phone}<span className="text-crimson-500 ml-0.5">*</span>
                     </label>
                     <Controller
                       name="phone"
@@ -274,7 +280,7 @@ export function BookingFormClient({
                   </div>
                   <FormField
                     id="idNumber"
-                    label="Passport / ID Number"
+                    label={t.booking.idNumber}
                     type="text"
                     placeholder="AB123456"
                     error={errors.idNumber?.message}
@@ -282,7 +288,7 @@ export function BookingFormClient({
                   />
                   <FormField
                     id="licenseNumber"
-                    label="Driving Licence Number"
+                    label={t.booking.licenseNumber}
                     type="text"
                     placeholder="KS-123456"
                     error={errors.licenseNumber?.message}
@@ -290,7 +296,7 @@ export function BookingFormClient({
                   />
                   <div>
                     <label htmlFor="nationality" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                      Nationality
+                      {t.booking.nationality}
                     </label>
                     <Controller
                       name="nationality"
@@ -300,7 +306,7 @@ export function BookingFormClient({
                           id="nationality"
                           value={field.value ?? ""}
                           onChange={field.onChange}
-                          placeholder="Select nationality"
+                          placeholder={locale === "al" ? "Zgjidh shtetësinë" : "Select nationality"}
                           valueType="nationality"
                           error={errors.nationality?.message}
                         />
@@ -315,18 +321,18 @@ export function BookingFormClient({
                   <div className="h-8 w-8 bg-navy-900 rounded-lg flex items-center justify-center">
                     <Tag className="h-4 w-4 text-white" />
                   </div>
-                  <h2 className="font-bold text-navy-900">Promo Code</h2>
+                  <h2 className="font-bold text-navy-900">{t.booking.couponCode}</h2>
                 </div>
                 {couponApplied ? (
                   <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl p-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
                       <div>
-                        <p className="text-sm font-semibold text-green-800">Code <span className="font-mono">{couponApplied.code}</span> applied</p>
-                        <p className="text-xs text-green-600">{couponApplied.description} — saves {formatCurrency(couponApplied.discount)}</p>
+                        <p className="text-sm font-semibold text-green-800">{locale === "al" ? "Kodi" : "Code"} <span className="font-mono">{couponApplied.code}</span> {locale === "al" ? "u aplikua" : "applied"}</p>
+                        <p className="text-xs text-green-600">{couponApplied.description} — {locale === "al" ? "kursen" : "saves"} {formatCurrency(couponApplied.discount)}</p>
                       </div>
                     </div>
-                    <button type="button" onClick={() => { setCouponApplied(null); setCouponCode(""); }} className="text-xs text-red-500 hover:underline font-medium ml-2">Remove</button>
+                    <button type="button" onClick={() => { setCouponApplied(null); setCouponCode(""); }} className="text-xs text-red-500 hover:underline font-medium ml-2">{locale === "al" ? "Hiq" : "Remove"}</button>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -336,7 +342,7 @@ export function BookingFormClient({
                         onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); validateCoupon(); } }}
                         className="form-input flex-1 font-mono"
-                        placeholder="Enter promo code"
+                        placeholder={locale === "al" ? "Vendos kodin promo" : "Enter promo code"}
                       />
                       <button
                         type="button"
@@ -344,7 +350,7 @@ export function BookingFormClient({
                         disabled={!couponCode.trim() || couponLoading}
                         className="px-4 py-2 bg-navy-900 hover:bg-navy-800 disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
                       >
-                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.booking.apply}
                       </button>
                     </div>
                     {couponError && (
@@ -364,7 +370,7 @@ export function BookingFormClient({
                     <div className="h-8 w-8 bg-navy-900 rounded-lg flex items-center justify-center">
                       <Shield className="h-4 w-4 text-white" />
                     </div>
-                    <h2 className="font-bold text-navy-900">Extras & Services</h2>
+                    <h2 className="font-bold text-navy-900">{t.booking.extras}</h2>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-3">
                     {allExtras.map((extra) => (
@@ -397,27 +403,27 @@ export function BookingFormClient({
 
               {/* Special requests */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
-                <h2 className="font-bold text-navy-900 mb-3">Special Requests</h2>
+                <h2 className="font-bold text-navy-900 mb-3">{t.booking.specialRequests}</h2>
                 <textarea
                   {...register("specialRequests")}
                   rows={3}
-                  placeholder="Any special requirements, child seat size, flight number for airport pickup, etc."
+                  placeholder={locale === "al" ? "Kërkesa të veçanta, madhësi karrige fëmijësh, numër fluturimi për marrje aeroporti, etj." : "Any special requirements, child seat size, flight number for airport pickup, etc."}
                   className="form-input resize-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">Optional — we will do our best to accommodate your requests.</p>
+                <p className="text-xs text-gray-400 mt-1">{locale === "al" ? "Opsionale — do të bëjmë çmos për t'i akomoduar kërkesat tuaja." : "Optional — we will do our best to accommodate your requests."}</p>
               </div>
 
               {/* Terms */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-                <h2 className="font-bold text-navy-900 mb-4">Agreements</h2>
+                <h2 className="font-bold text-navy-900 mb-4">{locale === "al" ? "Marrëveshjet" : "Agreements"}</h2>
                 <div className="space-y-3">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input type="checkbox" {...register("acceptTerms")} className="h-4 w-4 mt-0.5 rounded border-gray-300 text-navy-900 cursor-pointer" />
                     <span className="text-sm text-gray-700">
-                      I have read and accept the{" "}
-                      <Link href="/terms" target="_blank" className="text-navy-900 underline font-medium">Terms & Conditions</Link>
-                      {" "}and{" "}
-                      <Link href="/rental-policy" target="_blank" className="text-navy-900 underline font-medium">Rental Policy</Link>.
+                      {locale === "al" ? "Kam lexuar dhe pranoj " : "I have read and accept the "}
+                      <Link href="/terms" target="_blank" className="text-navy-900 underline font-medium">{t.footer.terms}</Link>
+                      {locale === "al" ? " dhe " : " and "}
+                      <Link href="/rental-policy" target="_blank" className="text-navy-900 underline font-medium">{t.footer.rentalPolicy}</Link>.
                     </span>
                   </label>
                   {errors.acceptTerms && (
@@ -429,8 +435,8 @@ export function BookingFormClient({
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" {...register("acceptCancellation")} className="h-4 w-4 mt-0.5 rounded border-gray-300 text-navy-900 cursor-pointer" />
                     <span className="text-sm text-gray-700">
-                      I accept the{" "}
-                      <Link href="/rental-policy#cancellation" target="_blank" className="text-navy-900 underline font-medium">Cancellation & Deposit Policy</Link>.
+                      {locale === "al" ? "Pranoj " : "I accept the "}
+                      <Link href="/rental-policy#cancellation" target="_blank" className="text-navy-900 underline font-medium">{locale === "al" ? "Politikën e Anulimit & Depozitës" : "Cancellation & Deposit Policy"}</Link>.
                     </span>
                   </label>
                   {errors.acceptCancellation && (
@@ -447,22 +453,22 @@ export function BookingFormClient({
                 className="btn-primary w-full py-4 text-base"
               >
                 {isSubmitting ? (
-                  <><Loader2 className="h-5 w-5 animate-spin" /> Processing Booking...</>
+                  <><Loader2 className="h-5 w-5 animate-spin" /> {t.booking.processing}</>
                 ) : (
-                  <>Confirm Booking — {formatCurrency(total)}</>
+                  <>{t.booking.confirmBooking} — {formatCurrency(total)}</>
                 )}
               </button>
 
               <p className="text-xs text-gray-400 text-center mt-3">
-                No payment required now. Your car is reserved instantly.
+                {locale === "al" ? "Asnjë pagesë e nevojshme tani. Makina juaj rezervohet menjëherë." : "No payment required now. Your car is reserved instantly."}
               </p>
             </form>
           </div>
 
-          {/* Summary sidebar */}
-          <div>
+          {/* Summary sidebar — appears first on mobile, last on lg */}
+          <div className="order-first lg:order-last">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sticky top-24">
-              <h3 className="font-bold text-navy-900 mb-4">Booking Summary</h3>
+              <h3 className="font-bold text-navy-900 mb-4">{locale === "al" ? "Përmbledhje e Rezervimit" : "Booking Summary"}</h3>
 
               {/* Car */}
               <div className="flex gap-3 mb-4 pb-4 border-b border-gray-100">
@@ -478,7 +484,7 @@ export function BookingFormClient({
                 <div>
                   <p className="text-xs text-crimson-500 font-semibold">{car.category.name}</p>
                   <p className="font-bold text-navy-900 text-sm">{car.name}</p>
-                  <p className="text-xs text-gray-500">{car.year} · {car.transmission === "AUTOMATIC" ? "Auto" : "Manual"}</p>
+                  <p className="text-xs text-gray-500">{car.year} · {car.transmission === "AUTOMATIC" ? (locale === "al" ? "Automatik" : "Auto") : (locale === "al" ? "Manual" : "Manual")}</p>
                 </div>
               </div>
 
@@ -487,23 +493,23 @@ export function BookingFormClient({
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-navy-900">Pickup</p>
+                    <p className="font-semibold text-navy-900">{t.confirm.pickup}</p>
                     <p className="text-gray-600 text-xs">{pickupLocation.name}</p>
-                    <p className="text-gray-500 text-xs">{pickupDate} at {pickupTime}</p>
+                    <p className="text-gray-500 text-xs">{pickupDate} {locale === "al" ? "në" : "at"} {pickupTime}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-navy-900">Drop-off</p>
+                    <p className="font-semibold text-navy-900">{t.confirm.dropoff}</p>
                     <p className="text-gray-600 text-xs">{dropoffLocation.name}</p>
-                    <p className="text-gray-500 text-xs">{returnDate} at {returnTime}</p>
+                    <p className="text-gray-500 text-xs">{returnDate} {locale === "al" ? "në" : "at"} {returnTime}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
                   <p className="text-gray-700">
-                    <span className="font-semibold">{durationDays} day{durationDays !== 1 ? "s" : ""}</span> total rental
+                    <span className="font-semibold">{durationDays} {durationDays !== 1 ? t.booking.days : t.booking.day}</span> {locale === "al" ? "gjithsej" : "total rental"}
                   </p>
                 </div>
               </div>
@@ -511,7 +517,7 @@ export function BookingFormClient({
               {/* Selected extras */}
               {selectedExtras.length > 0 && (
                 <div className="mb-4 pb-4 border-b border-gray-100">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Selected Extras</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{locale === "al" ? "Shtesa të Zgjedhura" : "Selected Extras"}</p>
                   {selectedExtras.map(id => {
                     const extra = allExtras.find(e => e.id === id);
                     if (!extra) return null;
@@ -529,57 +535,57 @@ export function BookingFormClient({
               {/* Price breakdown */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
-                  <span>{formatCurrency(effectivePricePerDay)}/day × {durationDays}d</span>
+                  <span>{formatCurrency(effectivePricePerDay)}{t.booking.perDay} × {durationDays}{locale === "al" ? "d" : "d"}</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 {extrasTotal > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Extras</span>
+                    <span>{t.booking.extrasTotal}</span>
                     <span>{formatCurrency(extrasTotal)}</span>
                   </div>
                 )}
                 {pickupFee > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Pickup fee</span>
+                    <span>{t.booking.pickupFee}</span>
                     <span>{formatCurrency(pickupFee)}</span>
                   </div>
                 )}
                 {dropoffFee > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Drop-off fee</span>
+                    <span>{t.booking.dropoffFee}</span>
                     <span>{formatCurrency(dropoffFee)}</span>
                   </div>
                 )}
                 {couponApplied && (
                   <div className="flex justify-between text-green-600 font-medium">
-                    <span>Discount ({couponApplied.code})</span>
+                    <span>{t.booking.discount} ({couponApplied.code})</span>
                     <span>-{formatCurrency(couponApplied.discount)}</span>
                   </div>
                 )}
                 {vatAmount > 0 && (
                   <>
                     <div className="flex justify-between text-gray-500 border-t border-gray-100 pt-2">
-                      <span>Subtotal (excl. VAT)</span>
+                      <span>{t.payment.subtotalExclVat}</span>
                       <span>{formatCurrency(preTaxTotal)}</span>
                     </div>
                     <div className="flex justify-between text-gray-500">
-                      <span>VAT (18%)</span>
+                      <span>{t.payment.vatRate}</span>
                       <span>{formatCurrency(vatAmount)}</span>
                     </div>
                   </>
                 )}
                 <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-navy-900 text-base">
-                  <span>Total (incl. VAT)</span>
+                  <span>{t.payment.totalInclVat}</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
                 <div className="flex justify-between text-gray-400 text-xs">
-                  <span>Deposit (pre-auth only)</span>
+                  <span>{t.payment.depositPreAuth}</span>
                   <span>{formatCurrency(car.deposit)}</span>
                 </div>
               </div>
 
               <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                <p className="text-xs text-green-700 font-medium">✓ Free cancellation up to 48 hours before pickup</p>
+                <p className="text-xs text-green-700 font-medium">✓ {locale === "al" ? "Anulim i lirë deri 48 orë para marrjes" : "Free cancellation up to 48 hours before pickup"}</p>
               </div>
             </div>
           </div>

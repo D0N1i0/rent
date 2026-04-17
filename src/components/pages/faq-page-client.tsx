@@ -6,20 +6,30 @@ import { ChevronDown, Search } from "lucide-react";
 import type { FaqItem } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-
-const categoryLabels: Record<string, string> = {
-  general: "General Questions",
-  booking: "Booking & Reservations",
-  payment: "Payment & Deposit",
-  insurance: "Insurance",
-  pickup: "Pickup & Drop-off",
-  requirements: "Requirements",
-};
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 export function FaqPageClient({ items, categories, whatsappNumber }: { items: FaqItem[]; categories: string[]; whatsappNumber: string }) {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const t = useT();
+  const { locale } = useLanguage();
+
+  const categoryLabels: Record<string, string> = locale === "al" ? {
+    general: "Pyetje të Përgjithshme",
+    booking: "Rezervimi",
+    payment: "Pagesa & Depozita",
+    insurance: "Sigurimi",
+    pickup: "Marrja & Kthimi",
+    requirements: "Kërkesat",
+  } : {
+    general: "General Questions",
+    booking: "Booking & Reservations",
+    payment: "Payment & Deposit",
+    insurance: "Insurance",
+    pickup: "Pickup & Drop-off",
+    requirements: "Requirements",
+  };
 
   const filtered = items.filter(item => {
     const matchesSearch = !search.trim() ||
@@ -34,15 +44,15 @@ export function FaqPageClient({ items, categories, whatsappNumber }: { items: Fa
       {/* Header */}
       <div className="bg-navy-900 py-16">
         <div className="page-container text-center">
-          <h1 className="font-display text-4xl font-bold text-white mb-3">Frequently Asked Questions</h1>
+          <h1 className="font-display text-4xl font-bold text-white mb-3">{t.contactFaq.faqTitle}</h1>
           <p className="text-gray-400 text-lg max-w-xl mx-auto mb-8">
-            Everything you need to know about renting a car with AutoKos in Kosovo.
+            {t.contactFaq.faqSubtitle}
           </p>
           <div className="relative max-w-md mx-auto">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search questions..."
+              placeholder={t.common.search}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-crimson-500"
@@ -58,7 +68,7 @@ export function FaqPageClient({ items, categories, whatsappNumber }: { items: Fa
             onClick={() => setActiveCategory("all")}
             className={cn("px-4 py-2 rounded-full text-sm font-medium border transition-colors", activeCategory === "all" ? "bg-navy-900 text-white border-navy-900" : "bg-white border-gray-200 text-gray-600 hover:border-navy-300")}
           >
-            All Topics
+            {t.common.all}
           </button>
           {categories.map(cat => (
             <button
@@ -75,14 +85,14 @@ export function FaqPageClient({ items, categories, whatsappNumber }: { items: Fa
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
             {items.length === 0 ? (
               <>
-                <p className="text-gray-500 font-medium">No FAQs have been added yet.</p>
-                <p className="text-gray-400 text-sm mt-1">Check back soon — we're adding answers to common questions.</p>
-                <a href="/contact" className="mt-4 inline-block text-crimson-500 text-sm hover:underline">Contact us directly</a>
+                <p className="text-gray-500 font-medium">{t.contactFaq.noResults}</p>
+                <p className="text-gray-400 text-sm mt-1">{locale === "al" ? "Kthehuni shpejt — po shtojmë përgjigje për pyetjet e zakonshme." : "Check back soon — we're adding answers to common questions."}</p>
+                <a href="/contact" className="mt-4 inline-block text-crimson-500 text-sm hover:underline">{t.nav.contact}</a>
               </>
             ) : (
               <>
-                <p className="text-gray-500 font-medium">No FAQs match your search.</p>
-                <button onClick={() => { setSearch(""); setActiveCategory("all"); }} className="mt-3 text-crimson-500 text-sm hover:underline">Clear search</button>
+                <p className="text-gray-500 font-medium">{t.contactFaq.noResults}</p>
+                <button onClick={() => { setSearch(""); setActiveCategory("all"); }} className="mt-3 text-crimson-500 text-sm hover:underline">{locale === "al" ? "Pastro kërkimin" : "Clear search"}</button>
               </>
             )}
           </div>
@@ -110,11 +120,11 @@ export function FaqPageClient({ items, categories, whatsappNumber }: { items: Fa
         )}
 
         <div className="text-center mt-12 p-8 bg-navy-900 rounded-2xl text-white max-w-2xl mx-auto">
-          <h2 className="font-bold text-xl mb-2">Still have questions?</h2>
-          <p className="text-gray-300 mb-5">Our team is available 24/7 to help you.</p>
+          <h2 className="font-bold text-xl mb-2">{locale === "al" ? "Keni ende pyetje?" : "Still have questions?"}</h2>
+          <p className="text-gray-300 mb-5">{locale === "al" ? "Ekipi ynë është i disponueshëm 24/7 për t'ju ndihmuar." : "Our team is available 24/7 to help you."}</p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="btn-primary text-sm px-5 py-2.5">WhatsApp Chat</a>
-            <Link href="/contact" className="inline-flex items-center gap-2 border border-white/30 text-white text-sm font-medium px-5 py-2.5 rounded-md hover:bg-white/10 transition-colors">Contact Us</Link>
+            <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="btn-primary text-sm px-5 py-2.5">{t.support.whatsapp}</a>
+            <Link href="/contact" className="inline-flex items-center gap-2 border border-white/30 text-white text-sm font-medium px-5 py-2.5 rounded-md hover:bg-white/10 transition-colors">{t.nav.contact}</Link>
           </div>
         </div>
       </div>

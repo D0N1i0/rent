@@ -5,28 +5,29 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
 import { CarCard } from "./car-card";
+import type { CarCardData } from "./car-card";
 import { calculateRentalDays } from "@/lib/utils";
-import type { Car, CarImage, CarCategory, Location } from "@prisma/client";
+import type { CarCategory, Location } from "@prisma/client";
 import { cn } from "@/lib/utils";
-
-type CarWithDetails = Car & { images: CarImage[]; category: CarCategory };
+import { useLanguage } from "@/lib/i18n/context";
 
 interface FleetClientProps {
-  cars: CarWithDetails[];
+  cars: CarCardData[];
   categories: CarCategory[];
   locations: Location[];
 }
 
-const sortOptions = [
-  { value: "recommended", label: "Recommended" },
-  { value: "price_asc", label: "Price: Low to High" },
-  { value: "price_desc", label: "Price: High to Low" },
-  { value: "newest", label: "Newest First" },
-  { value: "seats_asc", label: "Seats: Low to High" },
-];
-
 export function FleetClient({ cars, categories, locations }: FleetClientProps) {
   const searchParams = useSearchParams();
+  const { locale } = useLanguage();
+
+  const sortOptions = [
+    { value: "recommended", label: locale === "al" ? "Të rekomanduara" : "Recommended" },
+    { value: "price_asc", label: locale === "al" ? "Çmimi: Nga i ulëti" : "Price: Low to High" },
+    { value: "price_desc", label: locale === "al" ? "Çmimi: Nga i larti" : "Price: High to Low" },
+    { value: "newest", label: locale === "al" ? "Më të reja" : "Newest First" },
+    { value: "seats_asc", label: locale === "al" ? "Vende: Nga pak" : "Seats: Low to High" },
+  ];
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sort, setSort] = useState("recommended");
   const [search, setSearch] = useState("");
@@ -138,7 +139,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
         result.sort((a, b) => {
           if (a.isFeatured && !b.isFeatured) return -1;
           if (!a.isFeatured && b.isFeatured) return 1;
-          return a.sortOrder - b.sortOrder;
+          return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
         });
     }
 
@@ -149,13 +150,13 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
     <div className="space-y-6">
       {/* Category */}
       <div>
-        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Category</label>
+        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">{locale === "al" ? "Kategoria" : "Category"}</label>
         <div className="space-y-1.5">
           <button
             onClick={() => setFilter("categorySlug", "")}
             className={cn("w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors", !filters.categorySlug ? "bg-navy-900 text-white" : "hover:bg-gray-100")}
           >
-            All Categories
+            {locale === "al" ? "Të gjitha Kategoritë" : "All Categories"}
           </button>
           {categories.map((cat) => (
             <button
@@ -171,7 +172,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
 
       {/* Transmission */}
       <div>
-        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Transmission</label>
+        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">{locale === "al" ? "Transmisioni" : "Transmission"}</label>
         <div className="space-y-1.5">
           {["", "AUTOMATIC", "MANUAL"].map((t) => (
             <button
@@ -179,7 +180,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
               onClick={() => setFilter("transmission", t)}
               className={cn("w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors", filters.transmission === t ? "bg-navy-900 text-white" : "hover:bg-gray-100")}
             >
-              {t === "" ? "Any" : t === "AUTOMATIC" ? "Automatic" : "Manual"}
+              {t === "" ? (locale === "al" ? "Çdo lloj" : "Any") : t === "AUTOMATIC" ? (locale === "al" ? "Automatik" : "Automatic") : (locale === "al" ? "Manual" : "Manual")}
             </button>
           ))}
         </div>
@@ -187,24 +188,27 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
 
       {/* Fuel */}
       <div>
-        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Fuel Type</label>
+        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">{locale === "al" ? "Karburanti" : "Fuel Type"}</label>
         <div className="space-y-1.5">
-          {["", "PETROL", "DIESEL", "ELECTRIC", "HYBRID"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter("fuelType", f)}
-              className={cn("w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors", filters.fuelType === f ? "bg-navy-900 text-white" : "hover:bg-gray-100")}
-            >
-              {f === "" ? "Any" : f.charAt(0) + f.slice(1).toLowerCase()}
-            </button>
-          ))}
+          {["", "PETROL", "DIESEL", "ELECTRIC", "HYBRID"].map((f) => {
+            const fuelName: Record<string, string> = { "": locale === "al" ? "Çdo lloj" : "Any", PETROL: locale === "al" ? "Benzinë" : "Petrol", DIESEL: locale === "al" ? "Naftë" : "Diesel", ELECTRIC: locale === "al" ? "Elektrik" : "Electric", HYBRID: locale === "al" ? "Hibrid" : "Hybrid" };
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter("fuelType", f)}
+                className={cn("w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors", filters.fuelType === f ? "bg-navy-900 text-white" : "hover:bg-gray-100")}
+              >
+                {fuelName[f]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Price range */}
       <div>
         <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
-          Max Daily Price: €{filters.maxPrice}
+          {locale === "al" ? "Çmimi Max. Ditor" : "Max Daily Price"}: €{filters.maxPrice}
           {filters.maxPrice >= 300 ? "+" : ""}
         </label>
         <input
@@ -223,7 +227,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
 
       {/* Min seats */}
       <div>
-        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Minimum Seats</label>
+        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">{locale === "al" ? "Vende Minimum" : "Minimum Seats"}</label>
         <div className="flex gap-2 flex-wrap">
           {[0, 2, 4, 5, 7, 9].map((n) => (
             <button
@@ -231,7 +235,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
               onClick={() => setFilter("minSeats", n)}
               className={cn("px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors", filters.minSeats === n ? "bg-navy-900 text-white border-navy-900" : "border-gray-200 hover:border-navy-300")}
             >
-              {n === 0 ? "Any" : `${n}+`}
+              {n === 0 ? (locale === "al" ? "Çdo" : "Any") : `${n}+`}
             </button>
           ))}
         </div>
@@ -246,12 +250,12 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
           onChange={(e) => setFilter("hasAC", e.target.checked)}
           className="h-4 w-4 rounded border-gray-300 text-navy-900"
         />
-        <label htmlFor="hasAC" className="text-sm text-gray-700 font-medium">Air Conditioning Only</label>
+        <label htmlFor="hasAC" className="text-sm text-gray-700 font-medium">{locale === "al" ? "Vetëm me Klimatizim" : "Air Conditioning Only"}</label>
       </div>
 
       {activeFilterCount > 0 && (
         <button onClick={resetFilters} className="w-full py-2 text-sm text-crimson-600 hover:bg-crimson-50 rounded-lg transition-colors font-medium border border-crimson-200">
-          Clear All Filters ({activeFilterCount})
+          {locale === "al" ? `Pastro të gjithë filtrat (${activeFilterCount})` : `Clear All Filters (${activeFilterCount})`}
         </button>
       )}
     </div>
@@ -262,11 +266,15 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
       {/* Page header */}
       <div className="bg-navy-900 py-12">
         <div className="page-container">
-          <h1 className="font-display text-3xl font-bold text-white mb-2">Our Fleet</h1>
+          <h1 className="font-display text-3xl font-bold text-white mb-2">{locale === "al" ? "Flotila Jonë" : "Our Fleet"}</h1>
           <p className="text-gray-400">
             {durationDays > 0
-              ? `${filteredCars.length} cars available for ${durationDays} day${durationDays !== 1 ? "s" : ""}`
-              : `${cars.length} vehicles available across Kosovo`}
+              ? locale === "al"
+                ? `${filteredCars.length} makina të disponueshme për ${durationDays} ditë`
+                : `${filteredCars.length} cars available for ${durationDays} day${durationDays !== 1 ? "s" : ""}`
+              : locale === "al"
+                ? `${cars.length} automjete të disponueshme në Kosovë`
+                : `${cars.length} vehicles available across Kosovo`}
           </p>
         </div>
       </div>
@@ -278,7 +286,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search cars by brand, model, or category..."
+              placeholder={locale === "al" ? "Kërko makina sipas markës, modelit ose kategorisë..." : "Search cars by brand, model, or category..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="form-input pl-10 w-full"
@@ -291,7 +299,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
               className={cn("flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors lg:hidden", filtersOpen ? "bg-navy-900 text-white border-navy-900" : "bg-white border-gray-200 hover:border-navy-300")}
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
+              {locale === "al" ? "Filtrat" : "Filters"} {activeFilterCount > 0 && `(${activeFilterCount})`}
             </button>
 
             <div className="relative">
@@ -314,10 +322,10 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
           <aside className="hidden lg:block w-60 shrink-0">
             <div className="bg-white rounded-xl border border-gray-100 p-5 sticky top-24">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="font-bold text-sm text-navy-900">Filters</h3>
+                <h3 className="font-bold text-sm text-navy-900">{locale === "al" ? "Filtrat" : "Filters"}</h3>
                 {activeFilterCount > 0 && (
                   <button onClick={resetFilters} className="text-xs text-crimson-500 hover:underline">
-                    Clear ({activeFilterCount})
+                    {locale === "al" ? `Pastro (${activeFilterCount})` : `Clear (${activeFilterCount})`}
                   </button>
                 )}
               </div>
@@ -331,7 +339,7 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
               <div className="absolute inset-0 bg-black/50" onClick={() => setFiltersOpen(false)} />
               <div className="absolute right-0 top-0 bottom-0 w-80 bg-white p-6 overflow-y-auto">
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="font-bold text-navy-900">Filters</h3>
+                  <h3 className="font-bold text-navy-900">{locale === "al" ? "Filtrat" : "Filters"}</h3>
                   <button onClick={() => setFiltersOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
                     <X className="h-5 w-5" />
                   </button>
@@ -346,10 +354,10 @@ export function FleetClient({ cars, categories, locations }: FleetClientProps) {
             {filteredCars.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
                 <div className="text-4xl mb-4">🚗</div>
-                <h3 className="font-bold text-navy-900 mb-2">No cars match your filters</h3>
-                <p className="text-gray-500 text-sm mb-4">Try adjusting your search or filters.</p>
+                <h3 className="font-bold text-navy-900 mb-2">{locale === "al" ? "Asnjë makinë nuk përputhet me filtrat" : "No cars match your filters"}</h3>
+                <p className="text-gray-500 text-sm mb-4">{locale === "al" ? "Provoni të ndryshoni kërkimin ose filtrat." : "Try adjusting your search or filters."}</p>
                 <button onClick={resetFilters} className="btn-primary text-sm px-6 py-2.5">
-                  Clear All Filters
+                  {locale === "al" ? "Pastro të Gjithë Filtrat" : "Clear All Filters"}
                 </button>
               </div>
             ) : (

@@ -9,50 +9,7 @@ import {
   BarChart2, Activity, ChevronRight, Mail, Globe, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navGroups = [
-  {
-    label: "Overview",
-    items: [
-      { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin/analytics", label: "Analytics & Reports", icon: BarChart2 },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { href: "/admin/bookings", label: "Bookings", icon: Calendar },
-      { href: "/admin/cars", label: "Fleet / Cars", icon: Car },
-      { href: "/admin/categories", label: "Categories", icon: BarChart2 },
-      { href: "/admin/users", label: "Users", icon: Users },
-      { href: "/admin/locations", label: "Locations", icon: MapPin },
-      { href: "/admin/extras", label: "Extras & Services", icon: Package },
-      { href: "/admin/seasonal-pricing", label: "Seasonal Pricing", icon: Tag },
-      { href: "/admin/availability-blocks", label: "Availability Blocks", icon: Activity },
-    ],
-  },
-  {
-    label: "Content",
-    items: [
-      { href: "/admin/homepage", label: "Homepage", icon: Home },
-      { href: "/admin/offers", label: "Offers", icon: Tag },
-      { href: "/admin/reviews", label: "Reviews", icon: Star },
-      { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
-      { href: "/admin/legal", label: "Legal Pages", icon: FileText },
-      { href: "/admin/media", label: "Media", icon: Image },
-      { href: "/admin/contact-submissions", label: "Contact Inbox", icon: Mail },
-      { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { href: "/admin/seo", label: "SEO Management", icon: Globe },
-      { href: "/admin/activity-log", label: "Activity Log", icon: Activity },
-      { href: "/admin/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
+import { useLanguage } from "@/lib/i18n/context";
 
 interface AdminSidebarProps {
   pendingBookingsCount?: number;
@@ -62,6 +19,51 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ pendingBookingsCount = 0, unreadContactCount = 0, newFeedbackCount = 0 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { locale } = useLanguage();
+
+  const navGroups = [
+    {
+      label: locale === "al" ? "Pasqyra" : "Overview",
+      items: [
+        { href: "/admin/dashboard", label: locale === "al" ? "Kryefaqja" : "Dashboard", icon: LayoutDashboard },
+        { href: "/admin/analytics", label: locale === "al" ? "Analitika & Raporte" : "Analytics & Reports", icon: BarChart2 },
+      ],
+    },
+    {
+      label: locale === "al" ? "Operacionet" : "Operations",
+      items: [
+        { href: "/admin/bookings", label: locale === "al" ? "Rezervimet" : "Bookings", icon: Calendar },
+        { href: "/admin/cars", label: locale === "al" ? "Flotila / Makinat" : "Fleet / Cars", icon: Car },
+        { href: "/admin/categories", label: locale === "al" ? "Kategoritë" : "Categories", icon: BarChart2 },
+        { href: "/admin/users", label: locale === "al" ? "Përdoruesit" : "Users", icon: Users },
+        { href: "/admin/locations", label: locale === "al" ? "Lokacionet" : "Locations", icon: MapPin },
+        { href: "/admin/extras", label: locale === "al" ? "Shtesat & Shërbimet" : "Extras & Services", icon: Package },
+        { href: "/admin/seasonal-pricing", label: locale === "al" ? "Çmimet Sezonale" : "Seasonal Pricing", icon: Tag },
+        { href: "/admin/availability-blocks", label: locale === "al" ? "Bllokimet e Disponibilitetit" : "Availability Blocks", icon: Activity },
+      ],
+    },
+    {
+      label: locale === "al" ? "Përmbajtja" : "Content",
+      items: [
+        { href: "/admin/homepage", label: locale === "al" ? "Faqja Kryesore" : "Homepage", icon: Home },
+        { href: "/admin/offers", label: locale === "al" ? "Ofertat" : "Offers", icon: Tag },
+        { href: "/admin/reviews", label: locale === "al" ? "Vlerësimet" : "Reviews", icon: Star },
+        { href: "/admin/faq", label: locale === "al" ? "Pyetje të Shpeshta" : "FAQ", icon: HelpCircle },
+        { href: "/admin/legal", label: locale === "al" ? "Faqet Ligjore" : "Legal Pages", icon: FileText },
+        { href: "/admin/media", label: locale === "al" ? "Media" : "Media", icon: Image },
+        { href: "/admin/contact-submissions", label: locale === "al" ? "Mesazhet e Kontaktit" : "Contact Inbox", icon: Mail },
+        { href: "/admin/feedback", label: locale === "al" ? "Komentet" : "Feedback", icon: MessageSquare },
+      ],
+    },
+    {
+      label: locale === "al" ? "Sistemi" : "System",
+      items: [
+        { href: "/admin/seo", label: locale === "al" ? "Menaxhimi SEO" : "SEO Management", icon: Globe },
+        { href: "/admin/activity-log", label: locale === "al" ? "Regjistri i Aktivitetit" : "Activity Log", icon: Activity },
+        { href: "/admin/settings", label: locale === "al" ? "Cilësimet" : "Settings", icon: Settings },
+      ],
+    },
+  ];
 
   const badges: Record<string, number> = {
     "/admin/bookings": pendingBookingsCount,
@@ -79,7 +81,9 @@ export function AdminSidebar({ pendingBookingsCount = 0, unreadContactCount = 0,
           </div>
           <div>
             <span className="font-display text-lg font-bold text-white">Admin Panel</span>
-            <span className="block text-[10px] text-gray-400 font-medium tracking-wider uppercase">Management</span>
+            <span className="block text-[10px] text-gray-400 font-medium tracking-wider uppercase">
+              {locale === "al" ? "Menaxhim" : "Management"}
+            </span>
           </div>
         </Link>
       </div>
@@ -124,7 +128,7 @@ export function AdminSidebar({ pendingBookingsCount = 0, unreadContactCount = 0,
 
       <div className="p-4 border-t border-white/10">
         <Link href="/" className="admin-nav-item text-gray-400 text-xs">
-          ← Back to Website
+          {locale === "al" ? "← Kthehu në Faqe" : "← Back to Website"}
         </Link>
       </div>
     </aside>

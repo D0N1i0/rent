@@ -12,11 +12,14 @@ import { registerSchema, type RegisterValues } from "@/lib/validations/auth";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { CountrySelect } from "@/components/ui/country-select";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const t = useT();
+  const { locale } = useLanguage();
 
   const {
     register,
@@ -45,7 +48,7 @@ export default function RegisterPage() {
       });
       const result = await res.json();
       if (!res.ok) {
-        setServerError(result.error ?? "Registration failed");
+        setServerError(result.error ?? (locale === "al" ? "Regjistrimi dështoi" : "Registration failed"));
         return;
       }
 
@@ -57,7 +60,7 @@ export default function RegisterPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setServerError("Something went wrong. Please try again.");
+      setServerError(t.common.errorOccurred);
     }
   };
 
@@ -95,8 +98,8 @@ export default function RegisterPage() {
                 <span className="font-display text-2xl font-bold text-crimson-500">Kos</span>
               </div>
             </Link>
-            <h1 className="text-xl font-bold text-navy-900 mt-4">Create an account</h1>
-            <p className="text-gray-500 text-sm mt-1">Save your details for faster future bookings</p>
+            <h1 className="text-xl font-bold text-navy-900 mt-4">{t.auth.registerTitle}</h1>
+            <p className="text-gray-500 text-sm mt-1">{t.auth.registerSubtitle}</p>
           </div>
 
           {serverError && (
@@ -109,24 +112,24 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">First Name</label>
+                <label htmlFor="firstName" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.auth.firstNameLabel}</label>
                 <input id="firstName" type="text" autoComplete="given-name" placeholder="John" className={cn("form-input", errors.firstName && "border-red-400")} {...register("firstName")} />
                 {errors.firstName && <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>}
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Last Name</label>
+                <label htmlFor="lastName" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.auth.lastNameLabel}</label>
                 <input id="lastName" type="text" autoComplete="family-name" placeholder="Doe" className={cn("form-input", errors.lastName && "border-red-400")} {...register("lastName")} />
                 {errors.lastName && <p className="text-xs text-red-500 mt-1">{errors.lastName.message}</p>}
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Email Address</label>
+              <label htmlFor="email" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.auth.emailLabel}</label>
               <input id="email" type="email" autoComplete="email" placeholder="you@example.com" className={cn("form-input", errors.email && "border-red-400")} {...register("email")} />
               {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
             </div>
 
-            <Field id="phone" label="Phone Number *" error={errors.phone?.message}>
+            <Field id="phone" label={t.auth.phoneLabel} error={errors.phone?.message}>
               <Controller
                 name="phone"
                 control={control}
@@ -142,7 +145,7 @@ export default function RegisterPage() {
               />
             </Field>
 
-            <Field id="nationality" label="Nationality" error={errors.nationality?.message}>
+            <Field id="nationality" label={t.auth.nationalityLabel} error={errors.nationality?.message}>
               <Controller
                 name="nationality"
                 control={control}
@@ -161,7 +164,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                Password
+                {t.auth.passwordLabel}
               </label>
               <div className="relative">
                 <input
@@ -184,7 +187,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Confirm Password</label>
+              <label htmlFor="confirmPassword" className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.auth.confirmPasswordLabel}</label>
               <input id="confirmPassword" type="password" autoComplete="new-password" placeholder="Repeat your password" className={cn("form-input", errors.confirmPassword && "border-red-400")} {...register("confirmPassword")} />
               {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>}
             </div>
@@ -197,10 +200,7 @@ export default function RegisterPage() {
                   className="h-4 w-4 mt-0.5 rounded border-gray-300 text-navy-900"
                 />
                 <span className="text-xs text-gray-600">
-                  I agree to the{" "}
-                  <Link href="/terms" target="_blank" className="text-navy-900 underline">Terms &amp; Conditions</Link>
-                  {" "}and{" "}
-                  <Link href="/privacy" target="_blank" className="text-navy-900 underline">Privacy Policy</Link>
+                  {locale === "al" ? "Pranoj Kushtet dhe Rregullat" : "I accept the Terms and Conditions"}
                 </span>
               </label>
               {errors.acceptTerms && (
@@ -210,16 +210,16 @@ export default function RegisterPage() {
 
             <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3">
               {isSubmitting ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Creating Account...</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke krijuar llogarinë..." : "Creating Account..."}</>
               ) : (
-                "Create Account"
+                t.auth.registerButton
               )}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-600 mt-6">
-            Already have an account?{" "}
-            <Link href="/login" className="text-navy-900 font-semibold hover:underline">Sign in</Link>
+            {t.auth.haveAccount}{" "}
+            <Link href="/login" className="text-navy-900 font-semibold hover:underline">{t.auth.loginButton}</Link>
           </p>
         </div>
       </div>

@@ -18,6 +18,7 @@ import {
   LayoutDashboard as AdminIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 interface DashboardNavProps {
   user: {
@@ -27,17 +28,19 @@ interface DashboardNavProps {
   };
 }
 
-const navLinks = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/bookings", label: "Bookings", icon: Calendar },
-  { href: "/dashboard/profile", label: "Profile", icon: User },
-  { href: "/dashboard/security", label: "Security", icon: Lock },
-];
-
 export function DashboardNav({ user }: DashboardNavProps) {
   const pathname = usePathname();
   const isAdmin = user.role === "ADMIN" || user.role === "STAFF";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const t = useT();
+  const { locale } = useLanguage();
+
+  const navLinks = [
+    { href: "/dashboard", label: locale === "al" ? "Përmbledhje" : "Overview", icon: LayoutDashboard, exact: true },
+    { href: "/dashboard/bookings", label: t.dashboard.bookings, icon: Calendar },
+    { href: "/dashboard/profile", label: t.dashboard.profile, icon: User },
+    { href: "/dashboard/security", label: t.dashboard.security, icon: Lock },
+  ];
 
   return (
     <>
@@ -48,7 +51,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
           className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors mr-1"
         >
           <Home className="h-3.5 w-3.5" />
-          Site
+          {locale === "al" ? "Faqja" : "Site"}
         </Link>
 
         {/* Desktop nav */}
@@ -97,11 +100,11 @@ export function DashboardNav({ user }: DashboardNavProps) {
               <p className="text-xs text-gray-400 truncate">{user.email}</p>
             </div>
             <Link href="/" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-navy-50 hover:text-navy-900">
-              <Home className="h-4 w-4" /> Back to Website
+              <Home className="h-4 w-4" /> {locale === "al" ? "Kthehu te Faqja" : "Back to Website"}
             </Link>
             {isAdmin && (
               <Link href="/admin/dashboard" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-crimson-600 hover:bg-red-50 font-medium">
-                <AdminIcon className="h-4 w-4" /> Admin Panel
+                <AdminIcon className="h-4 w-4" /> {t.nav.adminPanel}
               </Link>
             )}
             <div className="border-t border-gray-100 my-1" />
@@ -109,7 +112,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               onClick={() => signOut({ callbackUrl: "/" })}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 w-full text-left"
             >
-              <LogOut className="h-4 w-4" /> Sign Out
+              <LogOut className="h-4 w-4" /> {t.nav.signOut}
             </button>
           </div>
         </div>
@@ -124,7 +127,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
             >
-              <Home className="h-4 w-4" /> Back to Site
+              <Home className="h-4 w-4" /> {locale === "al" ? "Kthehu te Faqja" : "Back to Site"}
             </Link>
             <div className="border-t border-white/10 my-1" />
             {navLinks.map((link) => {
@@ -155,7 +158,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-crimson-400 hover:text-crimson-300 hover:bg-white/10 transition-colors"
                 >
-                  <AdminIcon className="h-4 w-4" /> Admin Panel
+                  <AdminIcon className="h-4 w-4" /> {t.nav.adminPanel}
                 </Link>
               </>
             )}
@@ -164,7 +167,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               onClick={() => { setMobileOpen(false); signOut({ callbackUrl: "/" }); }}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-white/10 transition-colors w-full text-left"
             >
-              <LogOut className="h-4 w-4" /> Sign Out
+              <LogOut className="h-4 w-4" /> {t.nav.signOut}
             </button>
           </nav>
         </div>

@@ -23,9 +23,14 @@ async function getFleetData() {
   const [cars, categories, locations] = await Promise.all([
     prisma.car.findMany({
       where: { isActive: true },
-      include: {
-        images: { where: { isPrimary: true } },
-        category: true,
+      select: {
+        id: true, slug: true, name: true, brand: true, model: true, year: true,
+        seats: true, transmission: true, fuelType: true, hasAC: true,
+        isFeatured: true, sortOrder: true,
+        pricePerDay: true, pricePerWeek: true, pricePerMonth: true,
+        mileageLimit: true,
+        images: { where: { isPrimary: true }, select: { id: true, url: true, alt: true, isPrimary: true } },
+        category: { select: { id: true, name: true, slug: true } },
       },
       orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
     }),

@@ -180,8 +180,40 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
                 ))}
               </div>
             ))}
-            {/* Mobile language switcher */}
+            {/* Mobile Book Now button */}
             <div className="px-3 pt-3 border-t border-gray-100">
+              <Link href="/fleet" className="btn-primary w-full text-center" onClick={() => setMobileOpen(false)}>
+                {t.nav.bookNow}
+              </Link>
+            </div>
+
+            {/* Mobile sign-in / user actions */}
+            {session ? (
+              <div className="px-3 pt-2 space-y-1">
+                <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 hover:text-navy-900 hover:bg-gray-50 rounded-md" onClick={() => setMobileOpen(false)}>
+                  <User className="h-4 w-4" /> {t.nav.myAccount}
+                </Link>
+                <Link href="/dashboard/bookings" className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 hover:text-navy-900 hover:bg-gray-50 rounded-md" onClick={() => setMobileOpen(false)}>
+                  <Car className="h-4 w-4" /> {t.nav.myBookings}
+                </Link>
+                {isAdmin && (
+                  <Link href="/admin/dashboard" className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-crimson-600 hover:bg-red-50 rounded-md" onClick={() => setMobileOpen(false)}>
+                    <LayoutDashboard className="h-4 w-4" /> {t.nav.adminPanel}
+                  </Link>
+                )}
+                <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: "/" }); }} className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-md w-full text-left">
+                  <LogOut className="h-4 w-4" /> {t.nav.signOut}
+                </button>
+              </div>
+            ) : (
+              <div className="px-3 pt-2 flex gap-2">
+                <Link href="/login" className="flex-1 text-center px-3 py-2.5 text-sm font-medium text-gray-700 hover:text-navy-900 border border-gray-200 rounded-md" onClick={() => setMobileOpen(false)}>{t.nav.signIn}</Link>
+                <Link href="/register" className="flex-1 btn-secondary text-center text-sm px-3 py-2.5" onClick={() => setMobileOpen(false)}>{t.nav.register}</Link>
+              </div>
+            )}
+
+            {/* Mobile language switcher */}
+            <div className="px-3 pt-3 pb-1 border-t border-gray-100">
               <div className="bg-navy-900 rounded-md inline-flex p-1">
                 <LanguageSwitcher />
               </div>

@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { CarCard } from "@/components/cars/car-card";
-import type { Car, CarImage, CarCategory } from "@prisma/client";
+import type { CarCardData } from "@/components/cars/car-card";
 
-type CarWithDetails = Car & { images: CarImage[]; category: CarCategory };
-
-export function FeaturedCars({ cars, content }: { cars: CarWithDetails[]; content?: Record<string, string> }) {
+export function FeaturedCars({ cars, content }: { cars: CarCardData[]; content?: Record<string, string> }) {
   return (
     <section className="py-20 bg-gray-50">
       <div className="page-container">

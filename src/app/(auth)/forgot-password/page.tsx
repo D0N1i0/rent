@@ -8,10 +8,13 @@ import Link from "next/link";
 import { Car, Loader2, CheckCircle, AlertCircle, Mail } from "lucide-react";
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const t = useT();
+  const { locale } = useLanguage();
 
   const {
     register,
@@ -54,9 +57,9 @@ export default function ForgotPasswordPage() {
                 <span className="font-display text-2xl font-bold text-crimson-500">Kos</span>
               </div>
             </Link>
-            <h1 className="text-xl font-bold text-navy-900">Forgot your password?</h1>
+            <h1 className="text-xl font-bold text-navy-900">{t.auth.forgotTitle}</h1>
             <p className="text-gray-500 text-sm mt-1">
-              Enter your email and we&apos;ll send a reset link
+              {t.auth.forgotSubtitle}
             </p>
           </div>
 
@@ -65,13 +68,16 @@ export default function ForgotPasswordPage() {
               <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
-              <h2 className="font-bold text-navy-900 mb-2">Check your email</h2>
+              <h2 className="font-bold text-navy-900 mb-2">
+                {locale === "al" ? "Kontrolloni emailin tuaj" : "Check your email"}
+              </h2>
               <p className="text-sm text-gray-600 mb-6">
-                If an account exists for that email, we&apos;ve sent a password reset link. It
-                expires in 1 hour.
+                {locale === "al"
+                  ? "Nëse ekziston një llogari për atë email, kemi dërguar një lidhje rivendosjeje. Skadon brenda 1 ore."
+                  : "If an account exists for that email, we've sent a password reset link. It expires in 1 hour."}
               </p>
               <Link href="/login" className="btn-primary text-sm px-6 py-2.5">
-                Back to Sign In
+                {t.auth.backToLogin}
               </Link>
             </div>
           ) : (
@@ -88,7 +94,7 @@ export default function ForgotPasswordPage() {
                     htmlFor="email"
                     className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide"
                   >
-                    Email Address
+                    {t.auth.emailLabel}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -111,16 +117,16 @@ export default function ForgotPasswordPage() {
                   className="btn-primary w-full py-3"
                 >
                   {isSubmitting ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                    <><Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke dërguar..." : "Sending..."}</>
                   ) : (
-                    "Send Reset Link"
+                    t.auth.forgotButton
                   )}
                 </button>
               </form>
               <p className="text-center text-sm text-gray-600 mt-5">
-                Remember it?{" "}
+                {locale === "al" ? "E mbani mend?" : "Remember it?"}{" "}
                 <Link href="/login" className="text-navy-900 font-semibold hover:underline">
-                  Sign in
+                  {t.auth.loginButton}
                 </Link>
               </p>
             </>

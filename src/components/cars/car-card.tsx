@@ -1,27 +1,35 @@
 // src/components/cars/car-card.tsx
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { Users, Fuel, Settings, Luggage, Wind, ArrowRight, Star } from "lucide-react";
+import { Users, Fuel, Settings, Wind, ArrowRight, Star } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import type { Car, CarImage, CarCategory } from "@prisma/client";
-import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n/context";
 
-type CarWithDetails = Car & { images: CarImage[]; category: CarCategory };
-
-const fuelLabels: Record<string, string> = {
-  PETROL: "Petrol",
-  DIESEL: "Diesel",
-  ELECTRIC: "Electric",
-  HYBRID: "Hybrid",
-};
-
-const transmissionLabels: Record<string, string> = {
-  MANUAL: "Manual",
-  AUTOMATIC: "Automatic",
-};
+export interface CarCardData {
+  id: string;
+  slug: string;
+  name: string;
+  brand: string;
+  model: string;
+  year: number;
+  seats: number;
+  transmission: string;
+  fuelType: string;
+  hasAC: boolean;
+  isFeatured: boolean;
+  sortOrder?: number;
+  pricePerDay: number;
+  pricePerWeek?: number | null;
+  pricePerMonth?: number | null;
+  mileageLimit?: number | null;
+  images: { id?: string; url: string; alt?: string | null; isPrimary?: boolean | null }[];
+  category: { id?: string; name: string; slug: string };
+}
 
 interface CarCardProps {
-  car: CarWithDetails;
+  car: CarCardData;
   pickupLocationId?: string;
   dropoffLocationId?: string;
   pickupDate?: string;
@@ -41,7 +49,19 @@ export function CarCard({
   returnTime,
   durationDays,
 }: CarCardProps) {
+  const { locale } = useLanguage();
   const primaryImage = car.images.find((img) => img.isPrimary) ?? car.images[0];
+
+  const fuelLabels: Record<string, string> = {
+    PETROL: locale === "al" ? "Benzinë" : "Petrol",
+    DIESEL: locale === "al" ? "Naftë" : "Diesel",
+    ELECTRIC: locale === "al" ? "Elektrik" : "Electric",
+    HYBRID: locale === "al" ? "Hibrid" : "Hybrid",
+  };
+  const transmissionLabels: Record<string, string> = {
+    MANUAL: locale === "al" ? "Manual" : "Manual",
+    AUTOMATIC: locale === "al" ? "Automatik" : "Automatic",
+  };
 
   const bookingParams = new URLSearchParams();
   if (pickupLocationId) bookingParams.set("pickupLocationId", pickupLocationId);
@@ -66,6 +86,13 @@ export function CarCard({
     ? car.pricePerWeek / 7
     : car.pricePerDay;
 
+  const pricingTierLabel =
+    pricingTier === "monthly"
+      ? locale === "al" ? "çmim mujor" : "monthly rate"
+      : pricingTier === "weekly"
+      ? locale === "al" ? "çmim javor" : "weekly rate"
+      : "";
+
   return (
     <div className="car-card group flex flex-col">
       {/* Image */}
@@ -87,7 +114,6 @@ export function CarCard({
           </div>
         )}
 
-        {/* Category badge */}
         <div className="absolute top-3 left-3">
           <span className="bg-navy-900/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
             {car.category.name}
@@ -97,7 +123,7 @@ export function CarCard({
         {car.isFeatured && (
           <div className="absolute top-3 right-3">
             <span className="bg-crimson-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Star className="h-3 w-3" /> Featured
+              <Star className="h-3 w-3" /> {locale === "al" ? "I Zgjedhur" : "Featured"}
             </span>
           </div>
         )}
@@ -111,11 +137,10 @@ export function CarCard({
           <p className="text-xs text-gray-500 mt-0.5">{car.year} · {car.model}</p>
         </div>
 
-        {/* Specs */}
         <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <Users className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-            {car.seats} seats
+            {car.seats} {locale === "al" ? "vende" : "seats"}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <Settings className="h-3.5 w-3.5 text-gray-400 shrink-0" />
@@ -127,7 +152,7 @@ export function CarCard({
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <Wind className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-            {car.hasAC ? "Air Con" : "No A/C"}
+            {car.hasAC ? (locale === "al" ? "Klimatizim" : "Air Con") : (locale === "al" ? "Pa Klimë" : "No A/C")}
           </div>
         </div>
 
@@ -135,29 +160,26 @@ export function CarCard({
           <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-1.5 mb-0.5">
-                <p className="text-xs text-gray-500">From</p>
+                <p className="text-xs text-gray-500">{locale === "al" ? "Nga" : "From"}</p>
                 {pricingTier !== "daily" && (
-                  <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded-full capitalize">
-                    {pricingTier} rate
+                  <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded-full">
+                    {pricingTierLabel}
                   </span>
                 )}
               </div>
               <p className="text-xl font-bold text-navy-900">
                 {formatCurrency(displayPrice)}
-                <span className="text-sm font-normal text-gray-500">/day</span>
+                <span className="text-sm font-normal text-gray-500">{locale === "al" ? "/ditë" : "/day"}</span>
               </p>
               {car.mileageLimit ? (
-                <p className="text-xs text-gray-400">{car.mileageLimit} km/day included</p>
+                <p className="text-xs text-gray-400">{car.mileageLimit} {locale === "al" ? "km/ditë përfshirë" : "km/day included"}</p>
               ) : (
-                <p className="text-xs text-green-600 font-medium">Unlimited mileage</p>
+                <p className="text-xs text-green-600 font-medium">{locale === "al" ? "Kilometrazh i pakufizuar" : "Unlimited mileage"}</p>
               )}
             </div>
 
-            <Link
-              href={carUrl}
-              className="btn-primary text-sm px-4 py-2.5"
-            >
-              Book <ArrowRight className="h-4 w-4" />
+            <Link href={carUrl} className="btn-primary text-sm px-4 py-2.5">
+              {locale === "al" ? "Rezervo" : "Book"} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Car, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { resetPasswordSchema, type ResetPasswordValues } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils";
+import { useT, useLanguage } from "@/lib/i18n/context";
 
 export default function ResetPasswordPage() {
   return (
@@ -25,6 +26,8 @@ function ResetPasswordForm() {
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const t = useT();
+  const { locale } = useLanguage();
 
   const {
     register,
@@ -39,12 +42,14 @@ function ResetPasswordForm() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md w-full text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="font-bold text-navy-900 text-xl mb-2">Invalid Reset Link</h1>
+          <h1 className="font-bold text-navy-900 text-xl mb-2">
+            {locale === "al" ? "Lidhje e Pavlefshme" : "Invalid Reset Link"}
+          </h1>
           <p className="text-gray-600 text-sm mb-5">
             This password reset link is missing or invalid.
           </p>
           <Link href="/forgot-password" className="btn-primary text-sm px-5 py-2.5">
-            Request New Link
+            {locale === "al" ? "Kërko Lidhje të Re" : "Request New Link"}
           </Link>
         </div>
       </div>
@@ -67,7 +72,7 @@ function ResetPasswordForm() {
       setDone(true);
       setTimeout(() => router.push("/login"), 3000);
     } catch {
-      setServerError("Something went wrong. Please try again.");
+      setServerError(t.common.errorOccurred);
     }
   };
 
@@ -85,7 +90,8 @@ function ResetPasswordForm() {
                 <span className="font-display text-2xl font-bold text-crimson-500">Kos</span>
               </div>
             </Link>
-            <h1 className="text-xl font-bold text-navy-900">Set new password</h1>
+            <h1 className="text-xl font-bold text-navy-900">{t.auth.resetTitle}</h1>
+            <p className="text-gray-500 text-sm mt-1">{t.auth.resetSubtitle}</p>
           </div>
 
           {done ? (
@@ -93,12 +99,14 @@ function ResetPasswordForm() {
               <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
-              <h2 className="font-bold text-navy-900 mb-2">Password Updated!</h2>
+              <h2 className="font-bold text-navy-900 mb-2">
+                {locale === "al" ? "Fjalëkalimi u ndryshua me sukses" : "Password updated successfully"}
+              </h2>
               <p className="text-sm text-gray-600 mb-4">
-                Redirecting to sign in...
+                {locale === "al" ? "Duke ju ridrejtuar..." : "Redirecting to sign in..."}
               </p>
               <Link href="/login" className="btn-primary text-sm px-5 py-2.5">
-                Sign In Now
+                {t.auth.backToLogin}
               </Link>
             </div>
           ) : (
@@ -112,7 +120,7 @@ function ResetPasswordForm() {
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                    New Password
+                    {locale === "al" ? "Fjalëkalimi i Ri" : "New Password"}
                   </label>
                   <div className="relative">
                     <input
@@ -136,7 +144,7 @@ function ResetPasswordForm() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                    Confirm Password
+                    {t.auth.confirmPasswordLabel}
                   </label>
                   <input
                     type="password"
@@ -155,12 +163,17 @@ function ResetPasswordForm() {
                   className="btn-primary w-full py-3 mt-1"
                 >
                   {isSubmitting ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Updating...</>
+                    <><Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke përditësuar..." : "Updating..."}</>
                   ) : (
-                    "Update Password"
+                    t.auth.resetButton
                   )}
                 </button>
               </form>
+              <p className="text-center text-sm text-gray-600 mt-5">
+                <Link href="/login" className="text-navy-900 font-semibold hover:underline">
+                  {t.auth.backToLogin}
+                </Link>
+              </p>
             </>
           )}
         </div>
