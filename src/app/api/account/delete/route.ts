@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth, signOut } from "@/auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   password: z.string().min(1, "Password is required"),
@@ -13,6 +14,13 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 3 attempts per hour per IP — deletion is irreversible
+  const ip = getClientIp(req);
+  const rl = rateLimit(`account-delete:${ip}`, 3, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
+  }
+
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -51,14 +59,34 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Anonymize active/pending bookings - don't delete booking records for business history
-    await prisma.booking.updateMany({
-      where: {
-        userId: user.id,
-        status: { in: ["PENDING", "CONFIRMED"] },
-      },
-      data: { status: "CANCELLED", internalNotes: "Cancelled due to account deletion" },
+    // Find active bookings to cancel before deletion
+    const activeBookings = await prisma.booking.findMany({
+      where: { userId: user.id, status: { in: ["PENDING", "CONFIRMED"] } },
+      select: { id: true, status: true },
     });
+
+    if (activeBookings.length > 0) {
+      const now = new Date();
+      await prisma.$transaction([
+        prisma.booking.updateMany({
+          where: { id: { in: activeBookings.map((b) => b.id) } },
+          data: {
+            status: "CANCELLED",
+            cancelledAt: now,
+            cancellationReason: "Account deleted by customer",
+            internalNotes: "Auto-cancelled on account deletion",
+          },
+        }),
+        prisma.bookingStatusHistory.createMany({
+          data: activeBookings.map((b) => ({
+            bookingId: b.id,
+            fromStatus: b.status,
+            toStatus: "CANCELLED" as const,
+            reason: "Account deleted by customer",
+          })),
+        }),
+      ]);
+    }
 
     // Delete the user (cascade deletes sessions, accounts, password resets, activity logs)
     await prisma.user.delete({ where: { id: user.id } });

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { getSessionRole, isAdminRole } from "@/lib/authz";
 
+// Settings are ADMIN-only — STAFF must not be able to change site-wide config.
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user || !isAdminRole(getSessionRole(session))) return null;
+  if (!session?.user || session.user.role !== "ADMIN") return null;
   return session;
 }
 

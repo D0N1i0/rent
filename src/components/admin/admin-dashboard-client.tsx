@@ -34,6 +34,9 @@ interface AdminDashboardClientProps {
   todayBookings: number;
   recentBookings: RecentBooking[];
   recentActivity: RecentActivity[];
+  cancelledButPaid: number;
+  completedButUnpaid: number;
+  webhookFailures: number;
 }
 
 export function AdminDashboardClient({
@@ -49,6 +52,9 @@ export function AdminDashboardClient({
   todayBookings,
   recentBookings,
   recentActivity,
+  cancelledButPaid,
+  completedButUnpaid,
+  webhookFailures,
 }: AdminDashboardClientProps) {
   const { locale, t } = useLanguage();
 
@@ -105,6 +111,63 @@ export function AdminDashboardClient({
           </div>
           <ArrowRight className="h-4 w-4 text-yellow-600 group-hover:translate-x-1 transition-transform shrink-0" />
         </Link>
+      )}
+
+      {/* Payment anomaly alerts — require operator action */}
+      {(cancelledButPaid > 0 || completedButUnpaid > 0 || webhookFailures > 0) && (
+        <div className="space-y-2">
+          {cancelledButPaid > 0 && (
+            <Link
+              href="/admin/bookings?status=CANCELLED"
+              className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl p-4 hover:bg-red-100 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+                <div>
+                  <p className="font-semibold text-red-800">
+                    {cancelledButPaid} cancelled booking{cancelledButPaid !== 1 ? "s" : ""} with unpaid refund
+                  </p>
+                  <p className="text-sm text-red-700">Customer paid but booking was cancelled — refund required</p>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-red-600 group-hover:translate-x-1 transition-transform shrink-0" />
+            </Link>
+          )}
+          {completedButUnpaid > 0 && (
+            <Link
+              href="/admin/bookings?status=COMPLETED"
+              className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl p-4 hover:bg-orange-100 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-orange-600 shrink-0" />
+                <div>
+                  <p className="font-semibold text-orange-800">
+                    {completedButUnpaid} completed booking{completedButUnpaid !== 1 ? "s" : ""} still unpaid
+                  </p>
+                  <p className="text-sm text-orange-700">Booking completed but payment not recorded</p>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-orange-600 group-hover:translate-x-1 transition-transform shrink-0" />
+            </Link>
+          )}
+          {webhookFailures > 0 && (
+            <Link
+              href="/admin/activity-log?action=WEBHOOK_PROCESSING_FAILED"
+              className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-xl p-4 hover:bg-purple-100 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-purple-600 shrink-0" />
+                <div>
+                  <p className="font-semibold text-purple-800">
+                    {webhookFailures} webhook failure{webhookFailures !== 1 ? "s" : ""} in the last 7 days
+                  </p>
+                  <p className="text-sm text-purple-700">Stripe webhook events failed processing — check activity log</p>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-purple-600 group-hover:translate-x-1 transition-transform shrink-0" />
+            </Link>
+          )}
+        </div>
       )}
 
       {/* Stats */}

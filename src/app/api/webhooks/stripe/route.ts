@@ -162,23 +162,33 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error(`[Stripe Webhook] Error processing ${event.type}:`, err);
-    // Mark the event as FAILED + remove the idempotency row so Stripe's retry
-    // can reach a clean path. We delete-by-unique-key so a concurrent retry
-    // that raced in will not accidentally wipe a successful record.
-    await prisma.webhookEvent
-      .update({
-        where: { provider_eventId: { provider: "stripe", eventId: event.id } },
-        data: {
-          status: "FAILED",
-          error: String((err as Error)?.message ?? err).slice(0, 1000),
-        },
-      })
-      .catch(() => {});
+    // Remove the idempotency row atomically so Stripe's retry sees a clean
+    // path. We intentionally skip an intermediate FAILED-status update: if
+    // we wrote FAILED and then the delete failed (silently), the row would
+    // persist and block future retries — causing Stripe to receive
+    // `duplicate: true` and stop retrying even though processing never
+    // succeeded. A single delete avoids that split-brain.
     await prisma.webhookEvent
       .delete({
         where: { provider_eventId: { provider: "stripe", eventId: event.id } },
       })
       .catch(() => {});
+
+    // Log failure to the activity log so operators can investigate.
+    await prisma.activityLog
+      .create({
+        data: {
+          action: "WEBHOOK_PROCESSING_FAILED",
+          entity: "WebhookEvent",
+          entityId: event.id,
+          details: {
+            eventType: event.type,
+            error: String((err as Error)?.message ?? err).slice(0, 1000),
+          },
+        },
+      })
+      .catch(() => {});
+
     // Return 500 so Stripe retries per its backoff policy.
     return NextResponse.json({ received: false, processingError: true }, { status: 500 });
   }

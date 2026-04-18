@@ -112,6 +112,8 @@ export function parseSearchParamInt(value: string | null, fallback: number): num
 /** Generates a cryptographically secure booking reference. Format: AK-YYYY-XXXXXX */
 export function generateBookingRef(): string {
   const year = new Date().getFullYear();
-  const random = randomBytes(3).toString("hex").toUpperCase();
+  // 5 bytes = 10 hex chars = 2^40 (~1 trillion) combinations.
+  // 3-byte refs were brute-forceable (16M attempts); 5 bytes are not.
+  const random = randomBytes(5).toString("hex").toUpperCase();
   return `AK-${year}-${random}`;
 }
