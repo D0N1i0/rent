@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISO } from "date-fns";
 import { checkDateOverlap } from "@/lib/utils";
-import { BOOKING_RULES } from "@/lib/booking-rules";
+import { bookingConflictStatusFilter } from "@/lib/booking-rules";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     const existingBookings = await prisma.booking.findMany({
       where: {
         carId,
-        status: { in: [...BOOKING_RULES.activeBookingStatuses] },
+        ...bookingConflictStatusFilter(),
         ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
       },
       select: { pickupDateTime: true, dropoffDateTime: true },

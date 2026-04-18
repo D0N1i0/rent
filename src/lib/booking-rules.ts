@@ -1,5 +1,5 @@
 import { addHours, parseISO } from "date-fns";
-import type { Offer, SeasonalPricing } from "@prisma/client";
+import type { Offer, Prisma, SeasonalPricing } from "@prisma/client";
 import { calculateRentalDays } from "@/lib/utils";
 
 export const BOOKING_RULES = {
@@ -7,7 +7,42 @@ export const BOOKING_RULES = {
   minimumRentalHours: 1,
   minimumRentalDaysForPricing: 1,
   activeBookingStatuses: ["PENDING", "CONFIRMED", "IN_PROGRESS"] as const,
+  // An unpaid PENDING booking holds availability for at most this long.
+  // After the TTL expires, the reservation stops blocking new bookings so
+  // abandoned checkouts never permanently lock a car.
+  pendingHoldMinutes: 30,
 } as const;
+
+/**
+ * Build the Prisma `where` fragment that matches any booking which should
+ * block a new reservation on the same car. Used by both availability checks
+ * and the booking-create conflict query so behaviour cannot drift.
+ *
+ * Expired PENDING+UNPAID holds (older than `pendingHoldMinutes`) are
+ * intentionally excluded: they represent abandoned checkouts and must not
+ * permanently lock a vehicle.
+ */
+export function bookingConflictStatusFilter(now: Date = new Date()): Prisma.BookingWhereInput {
+  const holdCutoff = new Date(
+    now.getTime() - BOOKING_RULES.pendingHoldMinutes * 60_000
+  );
+  return {
+    OR: [
+      { status: { in: ["CONFIRMED", "IN_PROGRESS"] } },
+      {
+        AND: [
+          { status: "PENDING" },
+          {
+            OR: [
+              { paymentStatus: { not: "UNPAID" } },
+              { createdAt: { gte: holdCutoff } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
 
 export function buildBookingDateTimes(input: {
   pickupDate: string;

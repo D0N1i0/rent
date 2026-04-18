@@ -7,7 +7,7 @@ import { generateBookingRef } from "@/lib/utils";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { buildPriceBreakdown, buildExtraLineItems } from "@/lib/pricing";
 import { sendBookingConfirmationEmail } from "@/lib/email";
-import { BOOKING_RULES, buildBookingDateTimes, calculateOfferDiscount, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
+import { bookingConflictStatusFilter, buildBookingDateTimes, calculateOfferDiscount, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
 
 const MAX_REF_RETRIES = 5;
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     const conflicting = await prisma.booking.findFirst({
       where: {
         carId: car.id,
-        status: { in: [...BOOKING_RULES.activeBookingStatuses] },
+        ...bookingConflictStatusFilter(),
         AND: [{ pickupDateTime: { lt: returnDT } }, { dropoffDateTime: { gt: pickupDT } }],
       },
     });
@@ -141,16 +141,36 @@ export async function POST(req: NextRequest) {
       const bookingRef = generateBookingRef();
       try {
         booking = await prisma.$transaction(async (tx) => {
-          // Re-check for race conditions inside the transaction
+          // Per-car advisory lock: serializes concurrent booking creates for the
+          // SAME car so the conflict check below cannot be beaten by two tx
+          // reading "no conflict" simultaneously under READ COMMITTED.
+          // hashtextextended returns a deterministic bigint from the carId.
+          await tx.$executeRawUnsafe(
+            `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+            car.id
+          );
+
+          // Re-check for race conditions inside the transaction (now under lock)
           const raceConflict = await tx.booking.findFirst({
             where: {
               carId: car.id,
-              status: { in: [...BOOKING_RULES.activeBookingStatuses] },
+              ...bookingConflictStatusFilter(),
               AND: [{ pickupDateTime: { lt: returnDT } }, { dropoffDateTime: { gt: pickupDT } }],
             },
           });
           if (raceConflict) {
             throw new Error("RACE_CONFLICT");
+          }
+
+          // Also re-check availability blocks under lock (admin could have added one)
+          const raceBlock = await tx.availabilityBlock.findFirst({
+            where: {
+              carId: car.id,
+              AND: [{ startDate: { lt: returnDT } }, { endDate: { gt: pickupDT } }],
+            },
+          });
+          if (raceBlock) {
+            throw new Error("RACE_BLOCK");
           }
 
           const newBooking = await tx.booking.create({
@@ -259,7 +279,7 @@ export async function POST(req: NextRequest) {
         break;
       } catch (err: unknown) {
         const error = err as Error;
-        if (error.message === "RACE_CONFLICT") {
+        if (error.message === "RACE_CONFLICT" || error.message === "RACE_BLOCK") {
           return NextResponse.json(
             { error: "This vehicle just became unavailable. Please refresh and try again." },
             { status: 409 }
