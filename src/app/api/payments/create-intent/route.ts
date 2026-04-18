@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { stripe, eurosToCents } from "@/lib/stripe";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const schema = z.object({ bookingId: z.string().min(1) });
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const rl = rateLimit(`payment-intent:${ip}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: "Too many payment attempts." }, { status: 429 });
+    return tooManyRequests("Too many payment attempts.", rl.resetAt);
   }
 
   const session = await auth();

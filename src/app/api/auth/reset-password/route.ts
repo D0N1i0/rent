@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const schema = z.object({
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const rl = rateLimit(`reset-password:${ip}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: "Too many attempts. Please wait before trying again." }, { status: 429 });
+    return tooManyRequests("Too many attempts. Please wait before trying again.", rl.resetAt);
   }
 
   try {

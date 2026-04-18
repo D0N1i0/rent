@@ -4,17 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { randomBytes } from "crypto";
 import { addHours } from "date-fns";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   // Rate limit: 5 requests per 15 minutes per IP
   const ip = getClientIp(req);
   const rl = rateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please wait before trying again." },
-      { status: 429 }
-    );
+    return tooManyRequests("Too many requests. Please wait before trying again.", rl.resetAt);
   }
 
   try {

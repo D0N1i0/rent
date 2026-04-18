@@ -2,7 +2,7 @@
 // Validates a coupon code in real-time and returns exact error reason.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 import { calculateOfferDiscount } from "@/lib/booking-rules";
 import { z } from "zod";
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const rl = rateLimit(`coupon-validate:${ip}`, 30, 15 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ valid: false, error: "Too many attempts" }, { status: 429 });
+    return tooManyRequests("Too many attempts", rl.resetAt);
   }
 
   try {

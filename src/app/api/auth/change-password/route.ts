@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 const schema = z
   .object({
@@ -30,10 +30,7 @@ export async function POST(req: NextRequest) {
   // Rate limit: 10 password-change attempts per 15 minutes per user
   const rl = rateLimit(`change-password:${session.user.id}`, 10, 15 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: "Too many attempts. Please wait before trying again." },
-      { status: 429 }
-    );
+    return tooManyRequests("Too many attempts. Please wait before trying again.", rl.resetAt);
   }
 
   try {

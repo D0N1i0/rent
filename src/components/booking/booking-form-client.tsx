@@ -60,6 +60,7 @@ export function BookingFormClient({
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number; description: string } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [specialRequestsLen, setSpecialRequestsLen] = useState(0);
 
   const pricePreview = useMemo(() => {
     const { pickupDT, returnDT } = buildBookingDateTimes({ pickupDate, pickupTime, returnDate, returnTime });
@@ -139,8 +140,13 @@ export function BookingFormClient({
 
   const onSubmit = async (data: BookingFormValues) => {
     setServerError(null);
+    // Warn if user typed a coupon but didn't validate it
+    if (couponCode.trim() && !couponApplied) {
+      setCouponError(locale === "al" ? "Klikoni 'Apliko' për të zbatuar kodin promo." : "Click 'Apply' to activate your promo code before booking.");
+      return;
+    }
     try {
-      const payload = { ...data, selectedExtras, couponCode: couponApplied?.code ?? (couponCode.trim() || undefined) };
+      const payload = { ...data, selectedExtras, couponCode: couponApplied?.code ?? undefined };
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -405,12 +411,18 @@ export function BookingFormClient({
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
                 <h2 className="font-bold text-navy-900 mb-3">{t.booking.specialRequests}</h2>
                 <textarea
-                  {...register("specialRequests")}
+                  {...register("specialRequests", {
+                    onChange: (e) => setSpecialRequestsLen(e.target.value.length),
+                  })}
                   rows={3}
+                  maxLength={500}
                   placeholder={locale === "al" ? "Kërkesa të veçanta, madhësi karrige fëmijësh, numër fluturimi për marrje aeroporti, etj." : "Any special requirements, child seat size, flight number for airport pickup, etc."}
                   className="form-input resize-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">{locale === "al" ? "Opsionale — do të bëjmë çmos për t'i akomoduar kërkesat tuaja." : "Optional — we will do our best to accommodate your requests."}</p>
+                <div className="flex justify-between mt-1">
+                  <p className="text-xs text-gray-400">{locale === "al" ? "Opsionale — do të bëjmë çmos për t'i akomoduar kërkesat tuaja." : "Optional — we will do our best to accommodate your requests."}</p>
+                  <p className={cn("text-xs tabular-nums", specialRequestsLen > 450 ? "text-amber-500" : "text-gray-400")}>{specialRequestsLen}/500</p>
+                </div>
               </div>
 
               {/* Terms */}

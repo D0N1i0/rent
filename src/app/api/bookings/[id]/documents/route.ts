@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isAdminRole } from "@/lib/authz";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 import { writeFile, mkdir } from "fs/promises";
 import { join, extname } from "path";
 import { randomBytes } from "crypto";
@@ -35,7 +35,7 @@ export async function POST(
   const ip = getClientIp(req);
   const rl = rateLimit(`doc-upload:${ip}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: "Too many upload attempts." }, { status: 429 });
+    return tooManyRequests("Too many upload attempts.", rl.resetAt);
   }
 
   const session = await auth();
