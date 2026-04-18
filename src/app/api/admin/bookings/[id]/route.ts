@@ -62,7 +62,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-  return NextResponse.json({ booking });
+
+  // Payment activity — surfaces webhook events + manual admin actions so the
+  // operator can reconcile any payment anomalies from a single screen.
+  const paymentActivity = await prisma.activityLog.findMany({
+    where: {
+      entity: "Booking",
+      entityId: id,
+      action: { in: ["PAYMENT_RECEIVED", "PAYMENT_FAILED", "PAYMENT_REFUNDED", "PAYMENT_PARTIALLY_REFUNDED"] },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+
+  // Anomaly heuristics: situations an operator must investigate.
+  const anomalies: string[] = [];
+  if (booking.status === "CANCELLED" && booking.paymentStatus === "PAID") {
+    anomalies.push("Booking cancelled but payment not refunded");
+  }
+  if (booking.status === "COMPLETED" && booking.paymentStatus === "UNPAID") {
+    anomalies.push("Booking completed but still marked unpaid");
+  }
+  if (booking.stripePaymentIntentId && booking.paymentStatus === "UNPAID" && booking.createdAt < new Date(Date.now() - 60 * 60 * 1000)) {
+    anomalies.push("Payment intent created over an hour ago but booking still unpaid");
+  }
+
+  return NextResponse.json({ booking, paymentActivity, anomalies });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

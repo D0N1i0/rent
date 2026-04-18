@@ -30,6 +30,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  // ── Event-level idempotency (DB unique constraint) ───────────────────────
+  // Insert a WebhookEvent row FIRST. The (provider, eventId) unique index
+  // guarantees at-most-once processing even under concurrent deliveries —
+  // racing deliveries that both pass a pre-check would otherwise both run
+  // handler logic. If the insert fails with P2002 this delivery is a
+  // duplicate and must short-circuit.
+  try {
+    await prisma.webhookEvent.create({
+      data: {
+        provider: "stripe",
+        eventId: event.id,
+        eventType: event.type,
+        status: "PROCESSED",
+      },
+    });
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === "P2002") {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    console.error("[Stripe Webhook] Failed to record event:", err);
+    return NextResponse.json({ received: false }, { status: 500 });
+  }
+
   try {
     switch (event.type) {
       case "payment_intent.succeeded": {
@@ -138,8 +162,35 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error(`[Stripe Webhook] Error processing ${event.type}:`, err);
-    // Return 200 so Stripe doesn't retry — log for manual investigation
-    return NextResponse.json({ received: true, processingError: true });
+    // Remove the idempotency row atomically so Stripe's retry sees a clean
+    // path. We intentionally skip an intermediate FAILED-status update: if
+    // we wrote FAILED and then the delete failed (silently), the row would
+    // persist and block future retries — causing Stripe to receive
+    // `duplicate: true` and stop retrying even though processing never
+    // succeeded. A single delete avoids that split-brain.
+    await prisma.webhookEvent
+      .delete({
+        where: { provider_eventId: { provider: "stripe", eventId: event.id } },
+      })
+      .catch(() => {});
+
+    // Log failure to the activity log so operators can investigate.
+    await prisma.activityLog
+      .create({
+        data: {
+          action: "WEBHOOK_PROCESSING_FAILED",
+          entity: "WebhookEvent",
+          entityId: event.id,
+          details: {
+            eventType: event.type,
+            error: String((err as Error)?.message ?? err).slice(0, 1000),
+          },
+        },
+      })
+      .catch(() => {});
+
+    // Return 500 so Stripe retries per its backoff policy.
+    return NextResponse.json({ received: false, processingError: true }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

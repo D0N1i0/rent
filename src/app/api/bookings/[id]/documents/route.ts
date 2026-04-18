@@ -21,7 +21,9 @@ const MAX_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB
 
 function safeFileName(originalName: string, prefix: string): string {
   const ext = extname(originalName).toLowerCase().replace(/[^.a-z0-9]/g, "");
-  const random = randomBytes(8).toString("hex");
+  // 192 bits of entropy — makes the /uploads/docs path effectively unguessable
+  // so personal ID scans can't be enumerated by an attacker who learns the dir.
+  const random = randomBytes(24).toString("hex");
   return `${prefix}-${random}${ext}`;
 }
 
@@ -66,7 +68,10 @@ export async function POST(
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    const uploadDir = join(process.cwd(), "public", "uploads", "docs");
+    // Store documents in a private directory outside /public so they cannot be
+    // served directly by Next.js static file handling. Access is gated by the
+    // authenticated serving route at /api/uploads/docs/[...path].
+    const uploadDir = join(process.cwd(), "private-uploads", "docs");
     await mkdir(uploadDir, { recursive: true });
 
     const updates: { documentLicenseUrl?: string; documentIdUrl?: string } = {};
@@ -83,7 +88,8 @@ export async function POST(
       const filePath = join(uploadDir, safeName);
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
-      return `/uploads/docs/${safeName}`;
+      // Return the authenticated API path — NOT a /public path
+      return `/api/uploads/docs/${safeName}`;
     }
 
     if (licenseFile) {

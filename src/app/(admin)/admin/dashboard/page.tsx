@@ -20,6 +20,10 @@ export default async function AdminDashboardPage() {
     recentActivity,
     todayRevenue,
     todayBookings,
+    // Payment anomalies — operators must investigate these
+    cancelledButPaid,
+    completedButUnpaid,
+    webhookFailures,
   ] = await Promise.all([
     prisma.booking.count(),
     prisma.booking.count({ where: { status: "PENDING" } }),
@@ -47,6 +51,17 @@ export default async function AdminDashboardPage() {
       _sum: { totalAmount: true },
     }),
     prisma.booking.count({ where: { createdAt: { gte: todayStart } } }),
+    // Cancelled bookings where customer already paid — need refund action
+    prisma.booking.count({ where: { status: "CANCELLED", paymentStatus: "PAID" } }),
+    // Completed bookings that are still unpaid — need to collect payment
+    prisma.booking.count({ where: { status: "COMPLETED", paymentStatus: "UNPAID" } }),
+    // Webhook processing failures in the last 7 days
+    prisma.activityLog.count({
+      where: {
+        action: "WEBHOOK_PROCESSING_FAILED",
+        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    }),
   ]);
 
   return (
@@ -63,6 +78,9 @@ export default async function AdminDashboardPage() {
       todayBookings={todayBookings}
       recentBookings={recentBookings}
       recentActivity={recentActivity}
+      cancelledButPaid={cancelledButPaid}
+      completedButUnpaid={completedButUnpaid}
+      webhookFailures={webhookFailures}
     />
   );
 }

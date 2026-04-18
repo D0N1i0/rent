@@ -2,6 +2,7 @@
 // src/components/dashboard/booking-detail-client.tsx
 // Client component for the customer booking detail page — handles i18n translations.
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   formatCurrency,
@@ -20,9 +21,12 @@ import {
   Clock,
   FileText,
   Upload,
+  CreditCard,
+  Loader2,
 } from "lucide-react";
 import { CancelBookingButton } from "@/components/booking/cancel-booking-button";
 import { DocumentUpload } from "@/components/booking/document-upload";
+import { StripePaymentForm } from "@/components/booking/stripe-payment-form";
 import { useLanguage, useT } from "@/lib/i18n/context";
 
 interface BookingDetailClientProps {
@@ -75,6 +79,38 @@ export function BookingDetailClient({
 }: BookingDetailClientProps) {
   const { locale } = useLanguage();
   const t = useT();
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentDone, setPaymentDone] = useState(false);
+
+  const stripeEnabled = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  const canPayOnline =
+    stripeEnabled &&
+    ["PENDING", "CONFIRMED"].includes(booking.status) &&
+    booking.paymentStatus === "UNPAID";
+
+  async function handlePayOnline() {
+    setPaymentLoading(true);
+    setPaymentError(null);
+    try {
+      const res = await fetch("/api/payments/create-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: booking.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.clientSecret) {
+        setPaymentError(data.error ?? "Failed to start payment. Please try again.");
+        return;
+      }
+      setPaymentClientSecret(data.clientSecret);
+    } catch {
+      setPaymentError("Failed to start payment. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
 
   const label = {
     backToBookings: locale === "al" ? "Kthehu te rezervimet" : "Back to bookings",
@@ -295,6 +331,70 @@ export function BookingDetailClient({
             </div>
           </div>
         </div>
+
+        {/* Pay Online — shown when booking is unpaid and Stripe is configured */}
+        {canPayOnline && !paymentDone && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <CreditCard className="h-5 w-5 text-crimson-500" />
+              <h2 className="font-bold text-navy-900">
+                {locale === "al" ? "Paguaj Online" : "Pay Online"}
+              </h2>
+            </div>
+            {!paymentClientSecret ? (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  {locale === "al"
+                    ? "Paguaj tani me kartë debit ose kredit. Pagesa është e sigurt dhe procesohet nga Stripe."
+                    : "Pay now by debit or credit card. Payment is secure and processed by Stripe."}
+                </p>
+                {paymentError && (
+                  <p className="text-sm text-red-600 mb-3">{paymentError}</p>
+                )}
+                <button
+                  onClick={handlePayOnline}
+                  disabled={paymentLoading}
+                  className="flex items-center gap-2 bg-crimson-600 hover:bg-crimson-700 disabled:bg-gray-400 text-white font-bold px-6 py-3 rounded-xl transition-colors"
+                >
+                  {paymentLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> {locale === "al" ? "Duke ngarkuar..." : "Loading..."}</>
+                  ) : (
+                    <><CreditCard className="h-4 w-4" /> {locale === "al" ? "Paguaj Tani" : "Pay Now"} — {formatCurrency(booking.totalAmount)}</>
+                  )}
+                </button>
+              </>
+            ) : (
+              <StripePaymentForm
+                clientSecret={paymentClientSecret}
+                bookingRef={booking.bookingRef}
+                totalAmount={booking.totalAmount}
+                onSuccess={() => {
+                  setPaymentDone(true);
+                  // Reload to reflect confirmed status from webhook
+                  setTimeout(() => window.location.reload(), 2000);
+                }}
+                onCancel={() => {
+                  setPaymentClientSecret(null);
+                  setPaymentError(null);
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {paymentDone && (
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
+            <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+            <p className="font-bold text-green-800">
+              {locale === "al" ? "Pagesa u krye me sukses!" : "Payment successful!"}
+            </p>
+            <p className="text-sm text-green-600 mt-1">
+              {locale === "al"
+                ? "Rezervimi juaj është konfirmuar. Duke rifreskuar..."
+                : "Your booking is confirmed. Refreshing..."}
+            </p>
+          </div>
+        )}
 
         {/* Status history */}
         {booking.statusHistory.length > 0 && (

@@ -11,8 +11,15 @@ export const dynamic = "force-dynamic";
 
 function escapeCsv(val: unknown): string {
   if (val == null) return "";
-  const str = String(val);
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+  let str = String(val);
+  // Defuse CSV formula injection: Excel/LibreOffice execute a cell starting
+  // with = + - @ (and the tab/CR control chars) as a formula. Customer-
+  // supplied fields (name, email, phone, special requests) can carry any
+  // leading char, so prefix with an apostrophe — rendered as literal text.
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
+  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
@@ -24,7 +31,8 @@ function row(fields: unknown[]): string {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || !isAdminRole(session.user.role as string)) {
+  // CSV export contains customer PII — restrict to ADMIN only, not STAFF.
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

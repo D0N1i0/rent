@@ -1,4 +1,18 @@
 /** @type {import('next').NextConfig} */
+
+const securityHeaders = [
+  // Prevent MIME-type sniffing
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Prevent clickjacking — car rental bookings run in top-level windows only
+  { key: "X-Frame-Options", value: "DENY" },
+  // Block full-page referrer on cross-origin navigation (login, payment, admin)
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Disable FLOC/interest-based tracking
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+  // Force HTTPS for 1 year once loaded (set by CDN in prod — included here as a belt)
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+];
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -19,6 +33,15 @@ const nextConfig = {
   },
   publicRuntimeConfig: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  },
+  async headers() {
+    return [
+      {
+        // Apply security headers to all routes
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

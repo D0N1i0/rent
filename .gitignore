@@ -39,3 +39,7 @@ next-env.d.ts
 # uploads (local dev)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# private uploads — booking documents (ID/licence scans)
+# NEVER commit these — they contain sensitive customer PII
+/private-uploads/

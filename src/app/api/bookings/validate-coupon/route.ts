@@ -13,9 +13,13 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // Rate limit: 30 per 15 minutes per IP (typing validation calls)
+  // Two-tier limit:
+  //   1. Overall calls — generous for genuine typing
+  //   2. Invalid-code attempts — strict, to kill brute-force enumeration
+  // A legit customer rarely sees more than a couple of misses before typing it
+  // right or giving up; an attacker needs thousands of attempts to find a code.
   const ip = getClientIp(req);
-  const rl = rateLimit(`coupon-validate:${ip}`, 30, 15 * 60 * 1000);
+  const rl = rateLimit(`coupon-validate:${ip}`, 20, 5 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ valid: false, error: "Too many attempts" }, { status: 429 });
   }
@@ -33,6 +37,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (!offer) {
+      // Count invalid attempts separately — 8 misses per hour is plenty for a
+      // real user and far below what brute-force needs.
+      const miss = rateLimit(`coupon-invalid:${ip}`, 8, 60 * 60 * 1000);
+      if (!miss.allowed) {
+        return NextResponse.json(
+          { valid: false, error: "Too many invalid attempts. Please try again later." },
+          { status: 429 }
+        );
+      }
       return NextResponse.json({ valid: false, error: "Invalid coupon code" });
     }
 
