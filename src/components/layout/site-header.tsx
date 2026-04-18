@@ -22,6 +22,12 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = () => setDropdownOpen(null);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "STAFF";
   const compactPhone = settings.phone.replace(/\s+/g, "");
 
@@ -33,7 +39,7 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
       children: [
         { label: t.nav.airportRental, href: "/airport-rental" },
         { label: t.nav.longTermRental, href: "/long-term" },
-        { label: t.nav.allLocations, href: "/contact#locations" },
+        { label: t.nav.allLocations, href: "/contact" },
       ],
     },
     { label: t.nav.about, href: "/about" },
@@ -84,14 +90,17 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) =>
               link.children ? (
-                <div key={link.label} className="relative group">
+                <div key={link.label} className="relative">
                   <button
                     className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-navy-900 transition-colors rounded-md hover:bg-gray-50"
                     onMouseEnter={() => setDropdownOpen(link.label)}
                     onMouseLeave={() => setDropdownOpen(null)}
+                    onClick={() => setDropdownOpen(dropdownOpen === link.label ? null : link.label)}
+                    aria-expanded={dropdownOpen === link.label}
+                    aria-haspopup="true"
                   >
                     {link.label}
-                    <ChevronDown className="h-3.5 w-3.5" />
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", dropdownOpen === link.label && "rotate-180")} />
                   </button>
                   <div
                     className={cn(
@@ -102,7 +111,7 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
                     onMouseLeave={() => setDropdownOpen(null)}
                   >
                     {link.children.map((child) => (
-                      <Link key={child.href} href={child.href} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-navy-50 hover:text-navy-900 transition-colors">
+                      <Link key={child.href} href={child.href} onClick={() => setDropdownOpen(null)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-navy-50 hover:text-navy-900 transition-colors">
                         {child.label}
                       </Link>
                     ))}

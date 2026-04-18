@@ -31,7 +31,7 @@ export function SiteFooter({ settings, categories }: SiteFooterProps) {
   const serviceLinks = [
     { label: t.footer.airportPickup, href: "/airport-rental" },
     { label: t.footer.longTermRental, href: "/long-term" },
-    { label: t.footer.oneWayRental, href: "/fleet" },
+    { label: t.footer.ourFleet, href: "/fleet" },
     { label: t.footer.aboutUs, href: "/about" },
     { label: t.nav.faq, href: "/faq" },
     { label: t.footer.contactUs, href: "/contact" },

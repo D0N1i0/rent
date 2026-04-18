@@ -490,6 +490,10 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                     <span>{locale === "al" ? "Totali" : "Total"}</span>
                     <span>{formatCurrency(total)}</span>
                   </div>
+                  <div className="flex justify-between text-amber-700 text-xs bg-amber-50 rounded-lg px-2 py-1.5">
+                    <span>{locale === "al" ? "⚠ TVSH 18% shtohet në faqen e rezervimit" : "⚠ VAT 18% added at booking page"}</span>
+                    <span>+{formatCurrency(total * 0.18)}</span>
+                  </div>
                   <div className="flex justify-between text-gray-500 text-xs">
                     <span>{locale === "al" ? "Depozita e sigurisë (para-auth)" : "Security deposit (pre-auth)"}</span>
                     <span>{formatCurrency(car.deposit)}</span>
@@ -497,10 +501,11 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                 </div>
               )}
 
+              {/* On mobile, the sticky bottom bar is the primary CTA — only show here on desktop */}
               <button
                 onClick={handleBookNow}
                 disabled={!booking.pickupLocationId || !booking.pickupDate || !booking.returnDate}
-                className="btn-primary w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="hidden lg:flex btn-primary w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {locale === "al" ? "Rezervo Tani" : "Reserve Now"} <ArrowRight className="h-5 w-5" />
               </button>

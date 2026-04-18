@@ -41,7 +41,7 @@ export const registerSchema = z
     firstName: z.string().min(2, "First name must be at least 2 characters").max(50),
     lastName: z.string().min(2, "Last name must be at least 2 characters").max(50),
     email: z.string().min(1, "Email is required").email("Invalid email address"),
-    phone: phoneSchema,
+    phone: optionalPhoneSchema,
     nationality: z.string().max(80).optional().or(z.literal("")),
     password: z
       .string()

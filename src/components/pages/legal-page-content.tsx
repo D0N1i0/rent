@@ -6,32 +6,41 @@ import { ChevronRight } from "lucide-react";
 interface LegalPageContentProps {
   page: LegalPage;
   whatsappNumber?: string;
+  supportEmail?: string;
 }
 
 // Simple markdown-to-HTML renderer for legal content
 function renderMarkdown(content: string): string {
-  return content
+  let result = content
     // Headers
     .replace(/^# (.+)$/gm, '<h1 class="font-display text-3xl font-bold text-navy-900 mt-8 mb-4 first:mt-0">$1</h1>')
-    .replace(/^## (.+)$/gm, '<h2 class="font-bold text-xl text-navy-900 mt-8 mb-3 border-b border-gray-100 pb-2">$2</h2>')
+    .replace(/^## (.+)$/gm, '<h2 class="font-bold text-xl text-navy-900 mt-8 mb-3 border-b border-gray-100 pb-2">$1</h2>')
     .replace(/^### (.+)$/gm, '<h3 class="font-bold text-lg text-navy-900 mt-5 mb-2">$1</h3>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-navy-900">$1</strong>')
     // Lists
     .replace(/^- (.+)$/gm, '<li class="flex items-start gap-2 text-gray-600 mb-1"><span class="text-crimson-500 mt-1.5 shrink-0">•</span><span>$1</span></li>')
-    // Table rows (simple)
-    .replace(/^\|(.+)\|$/gm, (match, content) => {
-      const cells = content.split('|').map((c: string) => c.trim());
-      const isHeader = false;
-      return `<tr class="border-b border-gray-100">${cells.map((c: string) => `<td class="py-2 px-3 text-sm text-gray-700">${c}</td>`).join('')}</tr>`;
+    // Table rows — mark separator rows (---|---) to skip them
+    .replace(/^\|[\s\-:|]+\|$/gm, '')
+    // Table rows (data)
+    .replace(/^\|(.+)\|$/gm, (_match, cells) => {
+      const cols = cells.split('|').map((c: string) => c.trim());
+      return `<tr class="border-b border-gray-100">${cols.map((c: string) => `<td class="py-2 px-3 text-sm text-gray-700">${c}</td>`).join('')}</tr>`;
     })
-    // Paragraphs
-    .replace(/^(?!<[h|l|t]|$)(.+)$/gm, '<p class="text-gray-600 leading-relaxed mb-3">$1</p>')
-    // List wrapper (simplified)
-    .replace(/(<li .+<\/li>\n?)+/g, '<ul class="my-3 space-y-1 ml-2">$&</ul>');
+    // Paragraphs (skip lines that are already HTML tags)
+    .replace(/^(?!<[h1-6|li|tr|td|ul|$])(.+)$/gm, '<p class="text-gray-600 leading-relaxed mb-3">$1</p>')
+    // List wrapper
+    .replace(/(<li .+?<\/li>\n?)+/g, '<ul class="my-3 space-y-1 ml-2">$&</ul>');
+
+  // Wrap consecutive <tr> blocks in a <table>
+  result = result.replace(/(<tr[\s\S]*?<\/tr>\n?)+/g, (tableRows) =>
+    `<div class="overflow-x-auto my-4"><table class="w-full border border-gray-200 rounded-lg overflow-hidden">${tableRows}</table></div>`
+  );
+
+  return result;
 }
 
-export function LegalPageContent({ page, whatsappNumber = "38344123456" }: LegalPageContentProps) {
+export function LegalPageContent({ page, whatsappNumber = "38344123456", supportEmail = "info@autokos.com" }: LegalPageContentProps) {
   const htmlContent = renderMarkdown(page.content);
 
   return (
@@ -64,7 +73,7 @@ export function LegalPageContent({ page, whatsappNumber = "38344123456" }: Legal
             <p className="font-bold mb-2">Questions about this policy?</p>
             <p className="text-gray-300 text-sm mb-4">Contact our team — we're happy to explain anything in plain language.</p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <a href="mailto:info@autokos.com" className="btn-primary text-sm px-5 py-2.5">Email Us</a>
+              <a href={`mailto:${supportEmail}`} className="btn-primary text-sm px-5 py-2.5">Email Us</a>
               <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-white/30 text-white text-sm font-medium px-5 py-2.5 rounded-md hover:bg-white/10 transition-colors">WhatsApp</a>
             </div>
           </div>

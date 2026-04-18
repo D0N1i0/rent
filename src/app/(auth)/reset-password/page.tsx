@@ -1,7 +1,7 @@
 // src/app/(auth)/reset-password/page.tsx
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -26,6 +26,7 @@ function ResetPasswordForm() {
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const t = useT();
   const { locale } = useLanguage();
 
@@ -37,24 +38,43 @@ function ResetPasswordForm() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  if (!token) {
+  // Validate token on mount before showing the form
+  useEffect(() => {
+    if (!token) { setTokenValid(false); return; }
+    fetch(`/api/auth/reset-password/validate?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((data) => setTokenValid(data.valid === true))
+      .catch(() => setTokenValid(false));
+  }, [token]);
+
+  const invalidState = (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md w-full text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <h1 className="font-bold text-navy-900 text-xl mb-2">
+          {locale === "al" ? "Lidhje e Pavlefshme ose e Skaduar" : "Invalid or Expired Link"}
+        </h1>
+        <p className="text-gray-600 text-sm mb-5">
+          {locale === "al"
+            ? "Kjo lidhje ka skaduar ose është e pavlefshme. Ju lutemi kërkoni një lidhje të re."
+            : "This password reset link is invalid or has expired. Please request a new one."}
+        </p>
+        <Link href="/forgot-password" className="btn-primary text-sm px-5 py-2.5">
+          {locale === "al" ? "Kërko Lidhje të Re" : "Request New Link"}
+        </Link>
+      </div>
+    </div>
+  );
+
+  if (tokenValid === null) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md w-full text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="font-bold text-navy-900 text-xl mb-2">
-            {locale === "al" ? "Lidhje e Pavlefshme" : "Invalid Reset Link"}
-          </h1>
-          <p className="text-gray-600 text-sm mb-5">
-            This password reset link is missing or invalid.
-          </p>
-          <Link href="/forgot-password" className="btn-primary text-sm px-5 py-2.5">
-            {locale === "al" ? "Kërko Lidhje të Re" : "Request New Link"}
-          </Link>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-navy-900" />
       </div>
     );
   }
+
+  if (!tokenValid) return invalidState;
 
   const onSubmit = async (data: ResetPasswordValues) => {
     setServerError(null);

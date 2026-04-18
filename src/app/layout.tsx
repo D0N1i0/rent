@@ -27,6 +27,12 @@ export const metadata: Metadata = {
     "Kosovo's most trusted car rental. Modern fleet, airport pickup, transparent pricing. Book online in minutes.",
   keywords: ["car rental Kosovo", "rent a car Prishtina", "car hire Kosovo airport"],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.svg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
