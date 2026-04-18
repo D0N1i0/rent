@@ -1,6 +1,6 @@
 // src/app/api/bookings/[id]/documents/route.ts
 // Secure document upload (driving licence / ID) for a booking.
-// Files stored in /public/uploads/docs/ with sanitised names.
+// Files stored in private-uploads/docs/ (outside /public) with sanitised names.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -66,7 +66,7 @@ export async function POST(
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    const uploadDir = join(process.cwd(), "public", "uploads", "docs");
+    const uploadDir = join(process.cwd(), "private-uploads", "docs");
     await mkdir(uploadDir, { recursive: true });
 
     const updates: { documentLicenseUrl?: string; documentIdUrl?: string } = {};
@@ -83,7 +83,7 @@ export async function POST(
       const filePath = join(uploadDir, safeName);
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
-      return `/uploads/docs/${safeName}`;
+      return `/api/bookings/${id}/documents/file/${safeName}`;
     }
 
     if (licenseFile) {

@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { z } from "zod";
 import { sendBookingStatusEmail } from "@/lib/email";
+import { stripe } from "@/lib/stripe";
 
 async function requireAdmin() {
   const session = await auth();
@@ -82,7 +83,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Fetch current booking
     const current = await prisma.booking.findUnique({
       where: { id },
-      select: { status: true, guestEmail: true, guestFirstName: true, car: { select: { name: true } } },
+      select: { status: true, paymentStatus: true, guestEmail: true, guestFirstName: true, stripePaymentIntentId: true, car: { select: { name: true } } },
     });
     if (!current) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
@@ -146,6 +147,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return updated;
     });
 
+    // Cancel Stripe PI if booking is being cancelled
+    if (updates.status === "CANCELLED" && current.stripePaymentIntentId) {
+      try {
+        await stripe.paymentIntents.cancel(current.stripePaymentIntentId);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes("already been canceled") && !msg.includes("already succeeded")) {
+          console.error("[Admin Booking PATCH] Stripe PI cancel failed:", msg);
+        }
+      }
+    }
+
     // Send status email notification (non-blocking)
     if (
       updates.status &&
@@ -161,7 +174,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }).catch((err) => console.error("[Email] Status notification failed:", err));
     }
 
-    return NextResponse.json({ booking });
+    const response: { booking: typeof booking; warning?: string } = { booking };
+    if (updates.status === "CANCELLED" && current.paymentStatus === "PAID") {
+      response.warning = "This booking was marked as PAID. Please process a refund manually via the Stripe dashboard or payment processor.";
+    }
+    return NextResponse.json(response);
   } catch (error) {
     console.error("[Booking PATCH] Error:", error);
     return NextResponse.json({ error: "Failed to update booking" }, { status: 500 });

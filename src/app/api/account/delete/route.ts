@@ -51,17 +51,37 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Anonymize active/pending bookings - don't delete booking records for business history
-    await prisma.booking.updateMany({
-      where: {
-        userId: user.id,
-        status: { in: ["PENDING", "CONFIRMED"] },
-      },
-      data: { status: "CANCELLED", internalNotes: "Cancelled due to account deletion" },
-    });
+    // Use transaction: cancel active bookings with history, then delete user
+    await prisma.$transaction(async (tx) => {
+      // Find active bookings to cancel
+      const activeBookings = await tx.booking.findMany({
+        where: { userId: user.id, status: { in: ["PENDING", "CONFIRMED"] } },
+        select: { id: true, status: true },
+      });
 
-    // Delete the user (cascade deletes sessions, accounts, password resets, activity logs)
-    await prisma.user.delete({ where: { id: user.id } });
+      for (const booking of activeBookings) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: "CANCELLED",
+            cancelledAt: new Date(),
+            internalNotes: "Cancelled due to account deletion",
+          },
+        });
+        await tx.bookingStatusHistory.create({
+          data: {
+            bookingId: booking.id,
+            fromStatus: booking.status,
+            toStatus: "CANCELLED",
+            reason: "Account deleted by customer",
+            changedById: user.id,
+          },
+        });
+      }
+
+      // Delete the user (cascade deletes sessions, accounts, password resets)
+      await tx.user.delete({ where: { id: user.id } });
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

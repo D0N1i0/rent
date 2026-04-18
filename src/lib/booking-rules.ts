@@ -21,12 +21,18 @@ export function buildBookingDateTimes(input: {
   };
 }
 
-export function validateBookingWindow(pickupDT: Date, returnDT: Date, now = new Date()): string | null {
+export function validateBookingWindow(
+  pickupDT: Date,
+  returnDT: Date,
+  now = new Date(),
+  minimumLeadHoursOverride?: number
+): string | null {
+  const leadHours = minimumLeadHoursOverride ?? BOOKING_RULES.minimumLeadHours;
   if (Number.isNaN(pickupDT.getTime()) || Number.isNaN(returnDT.getTime())) {
     return "Invalid pickup or return date";
   }
-  if (pickupDT < addHours(now, BOOKING_RULES.minimumLeadHours)) {
-    return `Pickup must be at least ${BOOKING_RULES.minimumLeadHours} hours from now`;
+  if (pickupDT < addHours(now, leadHours)) {
+    return `Pickup must be at least ${leadHours} hours from now`;
   }
   if (returnDT <= pickupDT) {
     return "Return date and time must be after pickup";

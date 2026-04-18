@@ -39,3 +39,6 @@ next-env.d.ts
 # uploads (local dev)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# private document uploads (sensitive customer data — never commit)
+/private-uploads/
