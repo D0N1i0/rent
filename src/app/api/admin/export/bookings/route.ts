@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { isAdminRole } from "@/lib/authz";
 import { format } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
@@ -24,7 +23,8 @@ function row(fields: unknown[]): string {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || !isAdminRole(session.user.role as string)) {
+  // Customer data export is high-privilege — restrict to ADMIN only (not STAFF)
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

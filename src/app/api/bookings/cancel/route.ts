@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { z } from "zod";
 import { differenceInHours } from "date-fns";
 import { sendBookingStatusEmail } from "@/lib/email";
+import { stripe } from "@/lib/stripe";
 
 const schema = z.object({
   bookingId: z.string().min(1),
@@ -25,7 +26,17 @@ export async function POST(req: NextRequest) {
     // Fetch booking and verify ownership
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, userId: session.user.id },
-      include: { car: { select: { name: true } } },
+      select: {
+        id: true,
+        status: true,
+        guestEmail: true,
+        guestFirstName: true,
+        guestLastName: true,
+        bookingRef: true,
+        pickupDateTime: true,
+        stripePaymentIntentId: true,
+        car: { select: { name: true } },
+      },
     });
 
     if (!booking) {
@@ -77,6 +88,20 @@ export async function POST(req: NextRequest) {
         },
       });
     });
+
+    // Cancel the Stripe PaymentIntent if one exists — prevents late payment after cancellation
+    if (booking.stripePaymentIntentId) {
+      try {
+        await stripe.paymentIntents.cancel(booking.stripePaymentIntentId);
+      } catch (stripeErr: unknown) {
+        // Non-fatal — log but don't fail the cancellation
+        // PI may already be cancelled, expired, or succeeded
+        const msg = stripeErr instanceof Error ? stripeErr.message : String(stripeErr);
+        if (!msg.includes("already been canceled") && !msg.includes("already succeeded")) {
+          console.error("[Booking Cancel] Failed to cancel Stripe PI:", msg);
+        }
+      }
+    }
 
     // Send cancellation confirmation email
     if (booking.guestEmail) {

@@ -1,13 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { getSessionRole, isAdminRole } from "@/lib/authz";
 
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user || !isAdminRole(getSessionRole(session))) return null;
+  // Settings is a high-privilege operation — restrict to ADMIN only (not STAFF)
+  if (!session?.user || session.user.role !== "ADMIN") return null;
   return session;
 }
+
+const ALLOWED_SETTING_KEYS = new Set([
+  "business_name", "business_tagline", "business_description",
+  "contact_phone", "contact_phone_2", "contact_email", "contact_address",
+  "footer_about", "footer_tagline",
+  "whatsapp_number",
+  "social_facebook", "social_instagram", "social_tiktok", "social_youtube",
+  "support_hours", "support_label", "topbar_notice",
+  "logo_url", "favicon_url", "primary_color", "accent_color",
+  "google_maps_embed",
+  "booking_advance_hours", "cancellation_free_hours",
+  // Homepage sections
+  "hero_title", "hero_subtitle", "hero_image",
+  "contact_cta_title", "contact_cta_subtitle",
+  "airport_title", "airport_subtitle",
+  "why_title", "why_subtitle",
+  "how_title",
+  // Legal/SEO
+  "meta_title", "meta_description",
+]);
+
+const MAX_VALUE_LENGTH = 5000;
 
 export async function PUT(req: NextRequest) {
   const session = await requireAdmin();
@@ -19,7 +41,19 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    const updates = Object.entries(settings as Record<string, string>).map(([key, value]) =>
+    // Filter + validate against whitelist
+    const filteredSettings: Record<string, string> = {};
+    for (const [key, value] of Object.entries(settings as Record<string, unknown>)) {
+      if (!ALLOWED_SETTING_KEYS.has(key)) continue; // silently skip unknown keys
+      const strVal = String(value ?? "").slice(0, MAX_VALUE_LENGTH);
+      filteredSettings[key] = strVal;
+    }
+
+    if (Object.keys(filteredSettings).length === 0) {
+      return NextResponse.json({ error: "No valid settings keys provided" }, { status: 400 });
+    }
+
+    const updates = Object.entries(filteredSettings).map(([key, value]) =>
       prisma.siteSetting.upsert({
         where: { key },
         update: { value: String(value) },
@@ -42,7 +76,7 @@ export async function PUT(req: NextRequest) {
 
     await Promise.all(updates);
     await prisma.activityLog.create({
-      data: { userId: session.user.id, action: "SETTINGS_UPDATED", entity: "SiteSetting", details: { updatedKeys: Object.keys(settings) } },
+      data: { userId: session.user.id, action: "SETTINGS_UPDATED", entity: "SiteSetting", details: { updatedKeys: Object.keys(filteredSettings) } },
     });
 
     return NextResponse.json({ success: true });

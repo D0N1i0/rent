@@ -4,8 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { parseISO } from "date-fns";
 import { checkDateOverlap } from "@/lib/utils";
 import { BOOKING_RULES } from "@/lib/booking-rules";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = rateLimit(`availability:${ip}`, 60, 60 * 1000); // 60 per minute
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const carId = searchParams.get("carId");
   const pickupDate = searchParams.get("pickupDate");

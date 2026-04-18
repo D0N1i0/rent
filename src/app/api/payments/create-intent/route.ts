@@ -7,7 +7,10 @@ import { stripe, eurosToCents } from "@/lib/stripe";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 
-const schema = z.object({ bookingId: z.string().min(1) });
+const schema = z.object({
+  bookingId: z.string().min(1),
+  guestEmail: z.string().email().optional(),
+});
 
 export async function POST(req: NextRequest) {
   // Rate limit: 10 per hour per IP
@@ -34,9 +37,21 @@ export async function POST(req: NextRequest) {
 
     if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-    // Ownership check: logged-in user must own it, or it must be a guest booking (no userId)
-    if (session?.user && booking.userId && booking.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    // Ownership check
+    if (booking.userId) {
+      // Authenticated booking: must be the owner
+      if (!session?.user || booking.userId !== session.user.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    } else {
+      // Guest booking: require guestEmail to match
+      if (!parsed.data.guestEmail) {
+        return NextResponse.json({ error: "Guest email required for payment verification" }, { status: 400 });
+      }
+      const normalizedEmail = parsed.data.guestEmail.toLowerCase().trim();
+      if (booking.guestEmail?.toLowerCase().trim() !== normalizedEmail) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
     }
 
     // Only allow payment for PENDING/CONFIRMED + UNPAID
