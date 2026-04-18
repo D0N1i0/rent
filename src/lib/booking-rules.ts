@@ -1,4 +1,4 @@
-import { addHours, parseISO } from "date-fns";
+import { addHours } from "date-fns";
 import type { Offer, Prisma, SeasonalPricing } from "@prisma/client";
 import { calculateRentalDays } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
@@ -45,6 +45,61 @@ export function bookingConflictStatusFilter(now: Date = new Date()): Prisma.Book
   };
 }
 
+/**
+ * Business timezone. Kosovo observes CET (UTC+1) in winter and CEST (UTC+2)
+ * in summer. All customer-facing pickup/return times are wall-clock times
+ * in this zone, regardless of where the server runs.
+ */
+export const BUSINESS_TIMEZONE = "Europe/Belgrade" as const;
+
+/**
+ * Convert a Kosovo wall-clock date+time string into the correct UTC instant.
+ *
+ * `parseISO("2026-07-01T10:00:00")` without an offset depends on the host's
+ * local timezone. On a UTC production server (e.g. Vercel) this reads as
+ * UTC → the booking is stored 1-2 hours off, availability checks break, and
+ * customers get emails with the wrong times.
+ *
+ * This helper round-trips the naive timestamp through `Intl.DateTimeFormat`
+ * in the business zone to compute the zone's UTC offset on that specific
+ * date, handling DST transitions automatically.
+ */
+function kosovoWallTimeToUtc(date: string, time: string): Date {
+  // First, interpret the naive ISO string as if it were already UTC.
+  const asUtc = new Date(`${date}T${time}:00Z`);
+  if (Number.isNaN(asUtc.getTime())) return asUtc;
+
+  // Re-format that same instant as wall-clock in the business zone...
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(asUtc).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== "literal") acc[p.type] = p.value;
+    return acc;
+  }, {});
+
+  // ...and treat the zone-local parts as UTC, giving us the millis between
+  // "UTC-interpretation" and "business-zone-interpretation". That difference
+  // is the zone offset at that moment — apply it to shift the naive instant
+  // from UTC into the correct UTC instant for the Kosovo wall-clock input.
+  const zoneAsUtcMillis = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour === "24" ? "00" : parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  const offset = zoneAsUtcMillis - asUtc.getTime();
+  return new Date(asUtc.getTime() - offset);
+}
+
 export function buildBookingDateTimes(input: {
   pickupDate: string;
   pickupTime: string;
@@ -52,10 +107,12 @@ export function buildBookingDateTimes(input: {
   returnTime: string;
 }) {
   return {
-    pickupDT: parseISO(`${input.pickupDate}T${input.pickupTime}:00`),
-    returnDT: parseISO(`${input.returnDate}T${input.returnTime}:00`),
+    pickupDT: kosovoWallTimeToUtc(input.pickupDate, input.pickupTime),
+    returnDT: kosovoWallTimeToUtc(input.returnDate, input.returnTime),
   };
 }
+
+export { kosovoWallTimeToUtc };
 
 export function validateBookingWindow(pickupDT: Date, returnDT: Date, now = new Date()): string | null {
   if (Number.isNaN(pickupDT.getTime()) || Number.isNaN(returnDT.getTime())) {

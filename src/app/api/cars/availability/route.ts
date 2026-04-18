@@ -1,9 +1,8 @@
 // src/app/api/cars/availability/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { parseISO } from "date-fns";
 import { checkDateOverlap } from "@/lib/utils";
-import { bookingConflictStatusFilter } from "@/lib/booking-rules";
+import { bookingConflictStatusFilter, kosovoWallTimeToUtc } from "@/lib/booking-rules";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -19,8 +18,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const pickupDT = parseISO(`${pickupDate}T${pickupTime}:00`);
-    const returnDT = parseISO(`${returnDate}T${returnTime}:00`);
+    // Interpret client-submitted wall-clock as Kosovo local time, not UTC.
+    const pickupDT = kosovoWallTimeToUtc(pickupDate, pickupTime);
+    const returnDT = kosovoWallTimeToUtc(returnDate, returnTime);
 
     if (returnDT <= pickupDT) {
       return NextResponse.json({ available: false, reason: "Return must be after pickup" });

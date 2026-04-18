@@ -400,6 +400,12 @@ model Booking {
   @@index([status])
   @@index([pickupDateTime])
   @@index([bookingRef])
+  // Compound index for the hottest path: availability checks filter by
+  // `carId + status` (via bookingConflictStatusFilter) then constrain by
+  // the datetime range. With a per-column-only setup Postgres must bitmap
+  // the two indexes; a compound index lets it scan one BTree.
+  @@index([carId, status, pickupDateTime])
+  @@index([status, createdAt])
   @@map("bookings")
 }
 

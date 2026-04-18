@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { z } from "zod";
 import { differenceInHours } from "date-fns";
 import { sendBookingStatusEmail } from "@/lib/email";
+import { stripe } from "@/lib/stripe";
 
 const schema = z.object({
   bookingId: z.string().min(1),
@@ -46,6 +47,34 @@ export async function POST(req: NextRequest) {
     const hoursUntilPickup = differenceInHours(booking.pickupDateTime, new Date());
     const FREE_CANCEL_HOURS = 48;
     const isFreeCancellation = hoursUntilPickup >= FREE_CANCEL_HOURS;
+    const wasPaid = booking.paymentStatus === "PAID";
+
+    // Auto-refund the full amount if the customer is within the free
+    // cancellation window AND has already paid via Stripe. Outside that
+    // window we still cancel the booking but leave the refund to operator
+    // discretion (cancellation fee may apply). If the Stripe refund call
+    // fails, we still cancel the booking and flag the anomaly in the
+    // activity log so it surfaces in the admin UI.
+    let refundId: string | null = null;
+    let refundError: string | null = null;
+    const shouldAutoRefund = wasPaid && isFreeCancellation && !!booking.stripePaymentIntentId;
+    if (shouldAutoRefund) {
+      try {
+        const refund = await stripe.refunds.create({
+          payment_intent: booking.stripePaymentIntentId!,
+          reason: "requested_by_customer",
+          metadata: {
+            bookingId: booking.id,
+            bookingRef: booking.bookingRef,
+            initiatedBy: "customer-cancel",
+          },
+        });
+        refundId = refund.id;
+      } catch (err) {
+        refundError = String((err as Error)?.message ?? err).slice(0, 500);
+        console.error("[Booking Cancel] Auto-refund failed:", refundError);
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.update({
@@ -73,7 +102,7 @@ export async function POST(req: NextRequest) {
           action: "BOOKING_CANCELLED_BY_CUSTOMER",
           entity: "Booking",
           entityId: bookingId,
-          details: { reason, hoursUntilPickup, isFreeCancellation },
+          details: { reason, hoursUntilPickup, isFreeCancellation, wasPaid, refundId, refundError, shouldAutoRefund },
         },
       });
     });
@@ -89,12 +118,25 @@ export async function POST(req: NextRequest) {
       }).catch((err) => console.error("[Email] Cancellation email failed:", err));
     }
 
+    let message: string;
+    if (!wasPaid) {
+      message = isFreeCancellation
+        ? "Booking cancelled successfully."
+        : `Booking cancelled. Note: cancellations within ${FREE_CANCEL_HOURS} hours of pickup may incur a fee.`;
+    } else if (shouldAutoRefund && refundId) {
+      message = "Booking cancelled and a full refund has been issued. Funds typically appear within 5-10 business days.";
+    } else if (shouldAutoRefund && !refundId) {
+      message = "Booking cancelled. The automatic refund did not go through — our team has been notified and will process it manually.";
+    } else {
+      message = `Booking cancelled. Because you cancelled within ${FREE_CANCEL_HOURS} hours of pickup, a cancellation fee may apply; our team will review and refund any balance due.`;
+    }
+
     return NextResponse.json({
       success: true,
       isFreeCancellation,
-      message: isFreeCancellation
-        ? "Booking cancelled successfully. No cancellation fee applies."
-        : `Booking cancelled. Note: cancellations within ${FREE_CANCEL_HOURS} hours of pickup may incur a fee. Our team will be in touch.`,
+      refunded: !!refundId,
+      refundId,
+      message,
     });
   } catch (error) {
     console.error("[Booking Cancel] Error:", error);

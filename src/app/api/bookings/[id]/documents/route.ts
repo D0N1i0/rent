@@ -21,7 +21,9 @@ const MAX_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB
 
 function safeFileName(originalName: string, prefix: string): string {
   const ext = extname(originalName).toLowerCase().replace(/[^.a-z0-9]/g, "");
-  const random = randomBytes(8).toString("hex");
+  // 192 bits of entropy — makes the /uploads/docs path effectively unguessable
+  // so personal ID scans can't be enumerated by an attacker who learns the dir.
+  const random = randomBytes(24).toString("hex");
   return `${prefix}-${random}${ext}`;
 }
 
