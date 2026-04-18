@@ -7,7 +7,7 @@ import { generateBookingRef } from "@/lib/utils";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { buildPriceBreakdown, buildExtraLineItems } from "@/lib/pricing";
 import { sendBookingConfirmationEmail } from "@/lib/email";
-import { bookingConflictStatusFilter, buildBookingDateTimes, calculateOfferDiscount, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
+import { bookingConflictStatusFilter, buildBookingDateTimes, calculateOfferDiscount, closeAbandonedPendingBookings, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
 
 const MAX_REF_RETRIES = 5;
 
@@ -35,6 +35,12 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
     const selectedExtraIds: string[] = body.selectedExtras ?? [];
+
+    // Opportunistic cleanup of abandoned PENDING holds (rate-limited internally).
+    // Non-blocking: if cleanup fails we still proceed with the booking.
+    closeAbandonedPendingBookings().catch((err) =>
+      console.error("[booking-cleanup] failed:", err)
+    );
 
     // ── 2. Build datetime objects ─────────────────────────────────────────────
     const { pickupDT, returnDT } = buildBookingDateTimes({
@@ -341,6 +347,10 @@ export async function GET(req: NextRequest) {
   const userRole = session.user.role;
 
   if (userRole === "ADMIN" || userRole === "STAFF") {
+    // Kick stale-hold cleanup so admins always see fresh state.
+    closeAbandonedPendingBookings().catch((err) =>
+      console.error("[booking-cleanup] failed:", err)
+    );
     const page = Number(searchParams.get("page") ?? 1);
     const limit = Number(searchParams.get("limit") ?? 20);
     const status = searchParams.get("status");

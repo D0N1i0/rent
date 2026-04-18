@@ -617,3 +617,23 @@ model ActivityLog {
   @@index([createdAt])
   @@map("activity_logs")
 }
+
+// ─── WEBHOOK IDEMPOTENCY ──────────────────────────────────────────────────────
+// Processed webhook events (Stripe etc.). The unique `eventId` enforces
+// at-most-once processing at the DB layer — far stronger than an audit-log
+// heuristic, which can race under concurrent deliveries.
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String   // "stripe"
+  eventId     String
+  eventType   String
+  status      String   @default("PROCESSED") // PROCESSED | FAILED
+  error       String?
+  receivedAt  DateTime @default(now())
+  processedAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([eventType])
+  @@index([receivedAt])
+  @@map("webhook_events")
+}

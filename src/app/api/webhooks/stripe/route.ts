@@ -30,18 +30,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // ── Event-level idempotency ──────────────────────────────────────────────
-  // Stripe may deliver the same event multiple times (retries, network
-  // glitches). We persist a marker in ActivityLog the first time we see an
-  // event.id, and skip all further deliveries. This protects every handler
-  // below — including charge.refunded which does not have a paymentStatus
-  // idempotency short-circuit.
-  const alreadyProcessed = await prisma.activityLog.findFirst({
-    where: { entity: "StripeEvent", entityId: event.id },
-    select: { id: true },
-  });
-  if (alreadyProcessed) {
-    return NextResponse.json({ received: true, duplicate: true });
+  // ── Event-level idempotency (DB unique constraint) ───────────────────────
+  // Insert a WebhookEvent row FIRST. The (provider, eventId) unique index
+  // guarantees at-most-once processing even under concurrent deliveries —
+  // racing deliveries that both pass a pre-check would otherwise both run
+  // handler logic. If the insert fails with P2002 this delivery is a
+  // duplicate and must short-circuit.
+  try {
+    await prisma.webhookEvent.create({
+      data: {
+        provider: "stripe",
+        eventId: event.id,
+        eventType: event.type,
+        status: "PROCESSED",
+      },
+    });
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === "P2002") {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    console.error("[Stripe Webhook] Failed to record event:", err);
+    return NextResponse.json({ received: false }, { status: 500 });
   }
 
   try {
@@ -150,28 +160,23 @@ export async function POST(req: NextRequest) {
         // Ignore unhandled event types
         break;
     }
-
-    // Record the event as processed so duplicate deliveries short-circuit.
-    await prisma.activityLog.create({
-      data: {
-        action: "STRIPE_WEBHOOK_PROCESSED",
-        entity: "StripeEvent",
-        entityId: event.id,
-        details: { type: event.type },
-      },
-    });
   } catch (err) {
     console.error(`[Stripe Webhook] Error processing ${event.type}:`, err);
-    // Record the error for operator visibility, but do NOT mark the event as
-    // processed — Stripe will retry and we'll get another chance to succeed.
-    await prisma.activityLog
-      .create({
+    // Mark the event as FAILED + remove the idempotency row so Stripe's retry
+    // can reach a clean path. We delete-by-unique-key so a concurrent retry
+    // that raced in will not accidentally wipe a successful record.
+    await prisma.webhookEvent
+      .update({
+        where: { provider_eventId: { provider: "stripe", eventId: event.id } },
         data: {
-          action: "STRIPE_WEBHOOK_ERROR",
-          entity: "StripeEvent",
-          entityId: event.id,
-          details: { type: event.type, error: String((err as Error)?.message ?? err) },
+          status: "FAILED",
+          error: String((err as Error)?.message ?? err).slice(0, 1000),
         },
+      })
+      .catch(() => {});
+    await prisma.webhookEvent
+      .delete({
+        where: { provider_eventId: { provider: "stripe", eventId: event.id } },
       })
       .catch(() => {});
     // Return 500 so Stripe retries per its backoff policy.

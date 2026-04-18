@@ -1,6 +1,7 @@
 import { addHours, parseISO } from "date-fns";
 import type { Offer, Prisma, SeasonalPricing } from "@prisma/client";
 import { calculateRentalDays } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
 
 export const BOOKING_RULES = {
   minimumLeadHours: 2,
@@ -139,4 +140,69 @@ export function calculateOfferDiscount(params: {
 
 export function getDurationDays(pickupDT: Date, returnDT: Date) {
   return Math.max(BOOKING_RULES.minimumRentalDaysForPricing, calculateRentalDays(pickupDT, returnDT));
+}
+
+// ─── Stale-hold cleanup ───────────────────────────────────────────────────────
+// Explicitly close out abandoned PENDING+UNPAID bookings that are past the
+// hold TTL. Runs opportunistically from request-driven flows (booking list,
+// admin dashboard, booking create) — no separate cron needed.
+//
+// Safety guarantees:
+//   - only affects PENDING + UNPAID bookings (never touches paid/confirmed)
+//   - only affects rows older than `pendingHoldMinutes`
+//   - status history is recorded so the audit trail stays intact
+//   - updates are batched to keep a single request cheap
+//   - `cappedAt` caps the work per invocation so a busy system isn't starved
+let lastCleanupRun = 0;
+const CLEANUP_MIN_INTERVAL_MS = 60_000; // at most once per minute per instance
+
+export async function closeAbandonedPendingBookings(now: Date = new Date(), cappedAt = 50) {
+  // Rate-limit per instance so every request isn't doing cleanup work.
+  if (now.getTime() - lastCleanupRun < CLEANUP_MIN_INTERVAL_MS) return 0;
+  lastCleanupRun = now.getTime();
+
+  const cutoff = new Date(now.getTime() - BOOKING_RULES.pendingHoldMinutes * 60_000);
+
+  const stale = await prisma.booking.findMany({
+    where: {
+      status: "PENDING",
+      paymentStatus: "UNPAID",
+      createdAt: { lt: cutoff },
+    },
+    select: { id: true },
+    take: cappedAt,
+  });
+
+  if (!stale.length) return 0;
+
+  const ids = stale.map((b) => b.id);
+  await prisma.$transaction([
+    prisma.booking.updateMany({
+      where: { id: { in: ids }, status: "PENDING", paymentStatus: "UNPAID" },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        cancellationReason: "Abandoned checkout — payment not completed within hold window",
+      },
+    }),
+    prisma.bookingStatusHistory.createMany({
+      data: ids.map((id) => ({
+        bookingId: id,
+        fromStatus: "PENDING" as const,
+        toStatus: "CANCELLED" as const,
+        reason: "Abandoned checkout — auto-cancelled after hold expiry",
+      })),
+    }),
+    prisma.activityLog.createMany({
+      data: ids.map((id) => ({
+        action: "BOOKING_AUTO_CANCELLED",
+        entity: "Booking" as const,
+        entityId: id,
+        details: { reason: "abandoned-checkout", holdMinutes: BOOKING_RULES.pendingHoldMinutes },
+      })),
+    }),
+  ]);
+
+  console.log(`[booking-cleanup] auto-cancelled ${ids.length} abandoned PENDING bookings`);
+  return ids.length;
 }
