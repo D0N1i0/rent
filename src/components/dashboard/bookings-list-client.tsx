@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { formatCurrency, formatDate, getStatusColor, getPaymentStatusColor } from "@/lib/utils";
-import { Calendar, Car, MapPin, ArrowRight, ChevronLeft } from "lucide-react";
+import { Calendar, Car, MapPin, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
 type Booking = {
@@ -22,10 +22,14 @@ type Booking = {
 
 type Props = {
   bookings: Booking[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
 };
 
-export function BookingsListClient({ bookings }: Props) {
+export function BookingsListClient({ bookings, total = bookings.length, page = 1, pageSize = 10 }: Props) {
   const t = useT();
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div>
@@ -35,7 +39,7 @@ export function BookingsListClient({ bookings }: Props) {
             <ChevronLeft className="h-4 w-4" /> {t.common.back}
           </Link>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-navy-900">{t.dashboard.bookings}</h1>
-          <p className="text-gray-500 mt-1">{bookings.length} {bookings.length !== 1 ? t.dashboard.bookings.toLowerCase() : t.dashboard.bookings.toLowerCase()}</p>
+          <p className="text-gray-500 mt-1">{total} {total !== 1 ? t.dashboard.bookings.toLowerCase() : t.dashboard.bookings.toLowerCase()}</p>
         </div>
       </div>
 
@@ -92,6 +96,28 @@ export function BookingsListClient({ bookings }: Props) {
                 </div>
               </Link>
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            {page > 1 && (
+              <Link
+                href={`/dashboard/bookings?page=${page - 1}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </Link>
+            )}
+            <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+            {page < totalPages && (
+              <Link
+                href={`/dashboard/bookings?page=${page + 1}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         )}
       </div>

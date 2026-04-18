@@ -1,11 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { ContactSubmission } from "@prisma/client";
 import { formatDateTime } from "@/lib/utils";
-import { Mail, Archive, Search, Trash2, CheckCheck } from "lucide-react";
+import { Mail, Archive, Search, Trash2, CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
 
-export function ContactSubmissionsAdminClient({ submissions }: { submissions: ContactSubmission[] }) {
+interface Props {
+  submissions: ContactSubmission[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+export function ContactSubmissionsAdminClient({ submissions, total = submissions.length, page = 1, pageSize = 25 }: Props) {
   const [items, setItems] = useState(submissions);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "read" | "unread">("all");
@@ -192,6 +200,32 @@ export function ContactSubmissionsAdminClient({ submissions }: { submissions: Co
           </div>
         )}
       </div>
+
+      {Math.ceil(total / pageSize) > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-gray-500">
+            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            {page > 1 && (
+              <Link
+                href={`/admin/contact-submissions?page=${page - 1}`}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </Link>
+            )}
+            {page < Math.ceil(total / pageSize) && (
+              <Link
+                href={`/admin/contact-submissions?page=${page + 1}`}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
@@ -41,6 +42,7 @@ export async function PUT(req: NextRequest) {
     );
 
     await Promise.all(updates);
+    revalidateTag("settings");
     await prisma.activityLog.create({
       data: { userId: session.user.id, action: "SETTINGS_UPDATED", entity: "SiteSetting", details: { updatedKeys: Object.keys(settings) } },
     });

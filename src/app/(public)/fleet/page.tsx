@@ -1,5 +1,5 @@
 // src/app/(public)/fleet/page.tsx
-export const dynamic = "force-dynamic";
+export const revalidate = 600; // revalidate every 10 minutes
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { FleetClient } from "@/components/cars/fleet-client";

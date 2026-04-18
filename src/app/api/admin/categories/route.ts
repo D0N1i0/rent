@@ -1,5 +1,6 @@
 // src/app/api/admin/categories/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
@@ -56,5 +57,6 @@ export async function POST(req: NextRequest) {
       iconUrl: parsed.data.iconUrl ?? null,
     },
   });
+  revalidateTag("categories");
   return NextResponse.json({ category }, { status: 201 });
 }

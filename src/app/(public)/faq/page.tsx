@@ -1,5 +1,5 @@
 // src/app/(public)/faq/page.tsx
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // revalidate every hour
 import { prisma } from "@/lib/prisma";
 import { FaqPageClient } from "@/components/pages/faq-page-client";
 import type { Metadata } from "next";
@@ -20,13 +20,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function FaqPage() {
-  const items = await prisma.faqItem.findMany({
-    where: { isActive: true },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-  });
+  const [items, settings] = await Promise.all([
+    prisma.faqItem.findMany({
+      where: { isActive: true },
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+    }),
+    getPublicSettings(),
+  ]);
 
   const categories = [...new Set(items.map(i => i.category).filter(Boolean))] as string[];
-  const settings = await getPublicSettings();
 
   return <FaqPageClient items={items} categories={categories} whatsappNumber={settings.whatsappNumber} />;
 }

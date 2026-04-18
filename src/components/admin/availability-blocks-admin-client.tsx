@@ -2,8 +2,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Trash2, Save, X, CalendarOff } from "lucide-react";
+import { Loader2, Pencil, Trash2, Save, X, CalendarOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
 
 interface AvailabilityBlockItem {
@@ -48,9 +49,15 @@ function validateForm(form: FormState): FieldErrors {
 export function AvailabilityBlocksAdminClient({
   items: initialItems,
   cars,
+  total = initialItems.length,
+  page = 1,
+  pageSize = 30,
 }: {
   items: AvailabilityBlockItem[];
   cars: CarOption[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
@@ -324,6 +331,26 @@ export function AvailabilityBlocksAdminClient({
           </tbody>
         </table>
       </div>
+
+      {Math.ceil(total / pageSize) > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            {page > 1 && (
+              <Link href={`/admin/availability-blocks?page=${page - 1}`} className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </Link>
+            )}
+            {page < Math.ceil(total / pageSize) && (
+              <Link href={`/admin/availability-blocks?page=${page + 1}`} className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                Next <ChevronRight className="h-4 w-4" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

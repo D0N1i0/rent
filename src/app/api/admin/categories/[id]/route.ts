@@ -1,5 +1,6 @@
 // src/app/api/admin/categories/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
@@ -48,6 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       iconUrl: parsed.data.iconUrl ?? null,
     },
   });
+  revalidateTag("categories");
   return NextResponse.json({ category });
 }
 
@@ -65,5 +67,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   await prisma.carCategory.delete({ where: { id } });
+  revalidateTag("categories");
   return NextResponse.json({ ok: true });
 }
