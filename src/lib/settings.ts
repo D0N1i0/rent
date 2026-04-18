@@ -1,5 +1,6 @@
 // src/lib/settings.ts
 import { prisma } from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 
 type SettingRecord = { key: string; value: string };
 
@@ -47,7 +48,7 @@ const ALL_KEYS = [
   "phone", "support_email", "address",
 ];
 
-export async function getPublicSettings(): Promise<PublicSettings> {
+const _fetchPublicSettings = async (): Promise<PublicSettings> => {
   const rows = await prisma.siteSetting.findMany({
     where: { key: { in: ALL_KEYS } },
   });
@@ -91,7 +92,18 @@ export async function getPublicSettings(): Promise<PublicSettings> {
     bookingAdvanceHours: Number(m.booking_advance_hours ?? 2),
     cancellationFreeHours: Number(m.cancellation_free_hours ?? 48),
   };
-}
+};
+
+/**
+ * Cached settings fetch — revalidates every 5 minutes.
+ * Tag: "settings" — call revalidateTag("settings") in the admin settings
+ * save route to purge immediately after an admin update.
+ */
+export const getPublicSettings = unstable_cache(
+  _fetchPublicSettings,
+  ["public-settings"],
+  { revalidate: 300, tags: ["settings"] }
+);
 
 /** Get a single setting by key with a fallback default. */
 export async function getSetting(key: string, fallback = ""): Promise<string> {

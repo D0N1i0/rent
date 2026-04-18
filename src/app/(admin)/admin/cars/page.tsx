@@ -2,16 +2,40 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, Pencil, Eye, Car } from "lucide-react";
+import { Plus, Pencil, Eye, Car, Search } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { DeleteCarButton } from "@/components/admin/delete-car-button";
 import { ToggleCarActiveButton } from "@/components/admin/toggle-car-active-button";
 
-export default async function AdminCarsPage() {
+interface Props {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}
+
+export default async function AdminCarsPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const query = sp.q?.trim() ?? "";
+  const statusFilter = sp.status === "inactive" ? false : sp.status === "active" ? true : undefined;
+
+  const where = {
+    ...(statusFilter !== undefined && { isActive: statusFilter }),
+    ...(query && {
+      OR: [
+        { name: { contains: query, mode: "insensitive" as const } },
+        { brand: { contains: query, mode: "insensitive" as const } },
+        { model: { contains: query, mode: "insensitive" as const } },
+        { licensePlate: { contains: query, mode: "insensitive" as const } },
+      ],
+    }),
+  };
+
   const cars = await prisma.car.findMany({
-    include: {
+    where,
+    select: {
+      id: true, name: true, brand: true, model: true, year: true,
+      slug: true, transmission: true, pricePerDay: true,
+      isActive: true, isFeatured: true, sortOrder: true,
       category: { select: { name: true } },
-      images: { where: { isPrimary: true } },
+      images: { where: { isPrimary: true }, select: { url: true } },
       _count: { select: { bookings: true } },
     },
     orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
@@ -22,12 +46,32 @@ export default async function AdminCarsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-navy-900">Fleet Management</h1>
-          <p className="text-gray-500 text-sm mt-1">{cars.length} vehicles in fleet</p>
+          <p className="text-gray-500 text-sm mt-1">{cars.length} vehicles{query && ` matching "${query}"`}</p>
         </div>
         <Link href="/admin/cars/new" className="btn-primary text-sm px-4 py-2.5">
           <Plus className="h-4 w-4" /> Add Car
         </Link>
       </div>
+
+      <form method="GET" className="flex gap-2 max-w-sm">
+        <div className="relative flex-1">
+          <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            name="q"
+            defaultValue={query}
+            placeholder="Search by name, brand, plate…"
+            className="form-input pl-9 text-sm"
+          />
+        </div>
+        <button type="submit" className="px-3 py-2 bg-navy-900 text-white rounded-lg text-sm hover:bg-navy-800">
+          Search
+        </button>
+        {query && (
+          <Link href="/admin/cars" className="px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+            Clear
+          </Link>
+        )}
+      </form>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -45,9 +89,9 @@ export default async function AdminCarsPage() {
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-14 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                        {car.images[0]?.url ? (
+                        {(car.images as { url: string }[])[0]?.url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={car.images[0].url} alt={car.name} className="h-full w-full object-cover" />
+                          <img src={(car.images as { url: string }[])[0].url} alt={car.name} className="h-full w-full object-cover" />
                         ) : (
                           <Car className="h-5 w-5 text-gray-300" />
                         )}

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { bookingSchema } from "@/lib/validations/booking";
 import { generateBookingRef } from "@/lib/utils";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 import { buildPriceBreakdown, buildExtraLineItems } from "@/lib/pricing";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { BOOKING_RULES, buildBookingDateTimes, calculateOfferDiscount, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
@@ -16,10 +16,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const rl = rateLimit(`booking:${ip}`, 20, 60 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: "Too many booking attempts. Please wait before trying again." },
-      { status: 429 }
-    );
+    return tooManyRequests("Too many booking attempts. Please wait before trying again.", rl.resetAt);
   }
 
   try {

@@ -226,6 +226,7 @@ model Car {
   availabilityBlocks AvailabilityBlock[]
   seasonalPricing   SeasonalPricing[]
 
+  @@index([isActive])
   @@index([isActive, isFeatured])
   @@index([categoryId])
   @@map("cars")
@@ -269,6 +270,9 @@ model AvailabilityBlock {
   createdAt DateTime @default(now())
 
   @@index([carId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([carId, startDate, endDate])
   @@map("availability_blocks")
 }
 
@@ -399,7 +403,11 @@ model Booking {
   @@index([carId])
   @@index([status])
   @@index([pickupDateTime])
+  @@index([dropoffDateTime])
   @@index([bookingRef])
+  @@index([createdAt])
+  @@index([carId, status])
+  @@index([guestEmail])
   @@map("bookings")
 }
 
@@ -490,6 +498,9 @@ model Offer {
   sortOrder       Int       @default(0)
   createdAt       DateTime  @default(now())
 
+  @@index([isActive])
+  @@index([validFrom])
+  @@index([validUntil])
   @@map("offers")
 }
 

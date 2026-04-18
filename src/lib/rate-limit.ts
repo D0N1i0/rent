@@ -56,3 +56,21 @@ export function getClientIp(req: Request): string {
     "unknown"
   );
 }
+
+/**
+ * Build a standard 429 Too Many Requests response with a `Retry-After` header.
+ * Pass the `resetAt` unix-ms timestamp returned by `rateLimit()`.
+ */
+export function tooManyRequests(
+  message: string,
+  resetAt: number
+): Response {
+  const retryAfterSecs = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+  return new Response(JSON.stringify({ error: message }), {
+    status: 429,
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": String(retryAfterSecs),
+    },
+  });
+}

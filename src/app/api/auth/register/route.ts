@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
 const schema = z.object({
   firstName: z.string().min(2).max(50),
@@ -19,10 +19,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const rl = rateLimit(`register:${ip}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: "Too many registration attempts. Please try again later." },
-      { status: 429 }
-    );
+    return tooManyRequests("Too many registration attempts. Please try again later.", rl.resetAt);
   }
 
   try {
