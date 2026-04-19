@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { randomBytes } from "crypto";
+import { addHours } from "date-fns";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { sendEmailVerificationEmail } from "@/lib/email";
 
 const schema = z.object({
   firstName: z.string().min(2).max(50),
@@ -75,7 +78,22 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, userId: user.id }, { status: 201 });
+    // Create an email verification token and send the verification email.
+    // This is non-blocking — a send failure must not break registration.
+    const verificationToken = randomBytes(32).toString("hex");
+    await prisma.verificationToken.create({
+      data: {
+        identifier: normalizedEmail,
+        token: verificationToken,
+        expires: addHours(new Date(), 24),
+      },
+    }).catch((err) => console.error("[Register] Failed to create verification token:", err));
+
+    sendEmailVerificationEmail(normalizedEmail, verificationToken, firstName).catch((err) =>
+      console.error("[Register] Verification email failed:", err)
+    );
+
+    return NextResponse.json({ success: true, userId: user.id, requiresVerification: true }, { status: 201 });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "EMAIL_TAKEN") {

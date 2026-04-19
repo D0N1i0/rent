@@ -339,6 +339,35 @@ export async function sendBookingStatusEmail(
   });
 }
 
+export async function sendEmailVerificationEmail(
+  email: string,
+  token: string,
+  firstName?: string | null
+): Promise<void> {
+  const biz = await getEmailBizInfo();
+  const verifyUrl = `${biz.appUrl}/verify-email?token=${token}`;
+  const safeName = escapeHtml(firstName ?? "there");
+
+  await sendMail({
+    to: email,
+    subject: `Verify your ${biz.businessName} email address`,
+    html: htmlWrapper(`
+      <h2 style="color:#0F1E3C;margin-top:0;">Confirm Your Email Address</h2>
+      <p style="color:#374151;">Hi ${safeName},</p>
+      <p style="color:#374151;">Thank you for creating an account with ${escapeHtml(biz.businessName)}. Please verify your email address to complete your registration:</p>
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${escapeHtml(verifyUrl)}" style="background:#0F1E3C;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
+          Verify Email Address
+        </a>
+      </div>
+      <p style="color:#6b7280;font-size:14px;">This link will expire in <strong>24 hours</strong>.</p>
+      <p style="color:#6b7280;font-size:14px;">If you did not create an account, you can safely ignore this email.</p>
+      <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
+      <p style="color:#9ca3af;font-size:12px;">If the button above doesn&apos;t work, copy this link:<br/><a href="${escapeHtml(verifyUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(verifyUrl)}</a></p>
+    `, biz),
+  });
+}
+
 export async function sendContactNotificationEmail(
   adminEmail: string,
   submission: {

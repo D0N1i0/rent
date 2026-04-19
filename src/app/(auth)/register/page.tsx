@@ -52,12 +52,14 @@ export default function RegisterPage() {
         return;
       }
 
+      // Sign in immediately so the user lands in a logged-in state, then
+      // redirect to the "check email" page instead of the dashboard.
       await signIn("credentials", {
         email: data.email,
         password: data.password,
         redirect: false,
       });
-      router.push("/dashboard");
+      router.push(`/check-email?email=${encodeURIComponent(data.email)}`);
       router.refresh();
     } catch {
       setServerError(t.common.errorOccurred);

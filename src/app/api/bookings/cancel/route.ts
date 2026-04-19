@@ -6,6 +6,7 @@ import { z } from "zod";
 import { differenceInHours } from "date-fns";
 import { sendBookingStatusEmail } from "@/lib/email";
 import { stripe } from "@/lib/stripe";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   bookingId: z.string().min(1),
@@ -13,6 +14,13 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 10 cancel attempts per hour per IP
+  const ip = getClientIp(req);
+  const rl = rateLimit(`cancel:${ip}`, 10, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests. Please wait before trying again." }, { status: 429 });
+  }
+
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -4,14 +4,24 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { EmailVerificationBanner } from "@/components/dashboard/email-verification-banner";
 import { Car } from "lucide-react";
 import { getPublicSettings } from "@/lib/settings";
+import { prisma } from "@/lib/prisma";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login?callbackUrl=/dashboard");
 
-  const settings = await getPublicSettings();
+  const [settings, userRecord] = await Promise.all([
+    getPublicSettings(),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { emailVerified: true, email: true },
+    }),
+  ]);
+
+  const isUnverified = userRecord && !userRecord.emailVerified;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -27,6 +37,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <DashboardNav user={{ name: session.user.name, email: session.user.email, role: session.user.role }} />
         </div>
       </header>
+      {isUnverified && userRecord?.email && (
+        <EmailVerificationBanner email={userRecord.email} />
+      )}
       <main>{children}</main>
     </div>
   );

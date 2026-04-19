@@ -158,12 +158,25 @@ export default function SecurityPage() {
         </div>
 
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-          <p className="text-sm font-semibold text-blue-800 mb-2">Password Tips</p>
+          <p className="text-sm font-semibold text-blue-800 mb-2">
+            {locale === "al" ? "Këshilla për Fjalëkalimin" : "Password Tips"}
+          </p>
           <ul className="text-xs text-blue-700 space-y-1">
-            <li>• Use at least 12 characters for best security</li>
-            <li>• Mix uppercase, lowercase, numbers and symbols</li>
-            <li>• Never reuse passwords from other websites</li>
-            <li>• Consider using a password manager</li>
+            {locale === "al" ? (
+              <>
+                <li>• Përdorni të paktën 12 karaktere për siguri maksimale</li>
+                <li>• Kombinoni shkronja të mëdha, të vogla, numra dhe simbole</li>
+                <li>• Mos ripërdorni fjalëkalime nga faqe të tjera</li>
+                <li>• Konsideroni përdorimin e një menaxheri fjalëkalimesh</li>
+              </>
+            ) : (
+              <>
+                <li>• Use at least 12 characters for best security</li>
+                <li>• Mix uppercase, lowercase, numbers and symbols</li>
+                <li>• Never reuse passwords from other websites</li>
+                <li>• Consider using a password manager</li>
+              </>
+            )}
           </ul>
         </div>
 
