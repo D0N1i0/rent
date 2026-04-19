@@ -1,6 +1,7 @@
 // src/components/cars/car-card.tsx
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Users, Fuel, Settings, Wind, ArrowRight, Star } from "lucide-react";
@@ -50,6 +51,7 @@ export function CarCard({
   durationDays,
 }: CarCardProps) {
   const { locale } = useLanguage();
+  const [imgError, setImgError] = useState(false);
   const primaryImage = car.images.find((img) => img.isPrimary) ?? car.images[0];
 
   const fuelLabels: Record<string, string> = {
@@ -97,13 +99,14 @@ export function CarCard({
     <div className="car-card group flex flex-col">
       {/* Image */}
       <div className="relative overflow-hidden aspect-[16/10] bg-gray-100">
-        {primaryImage?.url ? (
+        {primaryImage?.url && !imgError ? (
           <Image
             src={primaryImage.url}
             alt={primaryImage.alt ?? car.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">

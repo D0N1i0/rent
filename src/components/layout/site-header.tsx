@@ -11,7 +11,7 @@ import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 export function SiteHeader({ settings }: { settings: PublicSettings }) {
   const { data: session } = useSession();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
@@ -30,6 +30,8 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
 
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "STAFF";
   const compactPhone = settings.phone.replace(/\s+/g, "");
+  const topbarNotice = locale === "al" ? "✈ Marrja nga Aeroporti i Disponueshëm" : settings.topbarNotice;
+  const supportLabel = locale === "al" ? "Mbështetje 24/7" : settings.supportLabel;
 
   const navLinks = [
     { label: t.nav.fleet, href: "/fleet" },
@@ -62,14 +64,14 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
               {settings.phone}
             </a>
             <span className="text-white/40">|</span>
-            <span>{settings.supportLabel}</span>
+            <span>{supportLabel}</span>
           </div>
           <div className="flex items-center gap-4">
             <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">
               WhatsApp
             </a>
             <span className="text-white/40">|</span>
-            <span>{settings.topbarNotice}</span>
+            <span>{topbarNotice}</span>
             <span className="text-white/40">|</span>
             <LanguageSwitcher />
           </div>
@@ -95,7 +97,7 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
                     className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-navy-900 transition-colors rounded-md hover:bg-gray-50"
                     onMouseEnter={() => setDropdownOpen(link.label)}
                     onMouseLeave={() => setDropdownOpen(null)}
-                    onClick={() => setDropdownOpen(dropdownOpen === link.label ? null : link.label)}
+                    onClick={(e) => { e.stopPropagation(); setDropdownOpen(dropdownOpen === link.label ? null : link.label); }}
                     aria-expanded={dropdownOpen === link.label}
                     aria-haspopup="true"
                   >
@@ -109,6 +111,7 @@ export function SiteHeader({ settings }: { settings: PublicSettings }) {
                     )}
                     onMouseEnter={() => setDropdownOpen(link.label)}
                     onMouseLeave={() => setDropdownOpen(null)}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {link.children.map((child) => (
                       <Link key={child.href} href={child.href} onClick={() => setDropdownOpen(null)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-navy-50 hover:text-navy-900 transition-colors">

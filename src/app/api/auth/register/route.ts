@@ -97,10 +97,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "EMAIL_TAKEN") {
-        return NextResponse.json({ error: "An account with this email already exists. Please sign in instead." }, { status: 409 });
+        return NextResponse.json({ error: "Registration could not be completed. If you already have an account, please sign in." }, { status: 409 });
       }
       if (error.message === "PHONE_TAKEN") {
-        return NextResponse.json({ error: "This phone number is already registered. Please use a different number or sign in." }, { status: 409 });
+        return NextResponse.json({ error: "Registration could not be completed. Please check your details and try again." }, { status: 409 });
       }
     }
     console.error("Registration error:", error);

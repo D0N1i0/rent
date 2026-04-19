@@ -224,7 +224,7 @@ export function BookingDetailClient({
               <div>
                 <p className="font-semibold text-navy-900">{label.pickup}</p>
                 <p className="text-gray-600">{booking.pickupLocation.name}</p>
-                <p className="text-gray-500 text-xs mt-0.5">
+                <p className="text-gray-500 text-xs mt-0.5" suppressHydrationWarning>
                   {formatDateTime(booking.pickupDateTime)}
                 </p>
               </div>
@@ -234,7 +234,7 @@ export function BookingDetailClient({
               <div>
                 <p className="font-semibold text-navy-900">{label.dropoff}</p>
                 <p className="text-gray-600">{booking.dropoffLocation.name}</p>
-                <p className="text-gray-500 text-xs mt-0.5">
+                <p className="text-gray-500 text-xs mt-0.5" suppressHydrationWarning>
                   {formatDateTime(booking.dropoffDateTime)}
                 </p>
               </div>
@@ -412,7 +412,7 @@ export function BookingDetailClient({
                       {h.toStatus.replace("_", " ")}
                     </p>
                     {h.reason && <p className="text-xs text-gray-500">{h.reason}</p>}
-                    <p className="text-xs text-gray-400">{formatDateTime(h.createdAt)}</p>
+                    <p className="text-xs text-gray-400" suppressHydrationWarning>{formatDateTime(h.createdAt)}</p>
                   </div>
                 </div>
               ))}
