@@ -50,9 +50,18 @@ function LoginForm() {
       return;
     }
 
-    // Fetch session to determine role-based redirect
-    if (callbackUrl) {
-      router.push(callbackUrl);
+    // Only redirect to relative same-origin paths — never to external URLs.
+    // An attacker can set callbackUrl=https://evil.com in the query string;
+    // without this check, router.push() would navigate there post-login.
+    const safeCallback =
+      callbackUrl &&
+      callbackUrl.startsWith("/") &&
+      !callbackUrl.startsWith("//")
+        ? callbackUrl
+        : null;
+
+    if (safeCallback) {
+      router.push(safeCallback);
     } else {
       // Re-fetch session to check role
       const { getSession } = await import("next-auth/react");

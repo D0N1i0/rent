@@ -5,6 +5,7 @@ import { auth, signOut } from "@/auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { stripe } from "@/lib/stripe";
 
 const schema = z.object({
   password: z.string().min(1, "Password is required"),
@@ -59,14 +60,36 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Find active bookings to cancel before deletion
+    // Find active bookings to cancel before deletion.
+    // Include payment info so we can attempt Stripe refunds for PAID bookings.
     const activeBookings = await prisma.booking.findMany({
       where: { userId: user.id, status: { in: ["PENDING", "CONFIRMED"] } },
-      select: { id: true, status: true },
+      select: { id: true, status: true, paymentStatus: true, stripePaymentIntentId: true, bookingRef: true },
     });
 
     if (activeBookings.length > 0) {
       const now = new Date();
+
+      // Attempt Stripe refunds for any PAID bookings being auto-cancelled.
+      // Failures are logged but do not block deletion — admin sees CANCELLED+PAID anomaly.
+      const refundResults: Array<{ bookingId: string; refundId: string | null; error: string | null }> = [];
+      for (const b of activeBookings) {
+        if (b.paymentStatus === "PAID" && b.stripePaymentIntentId) {
+          try {
+            const refund = await stripe.refunds.create({
+              payment_intent: b.stripePaymentIntentId,
+              reason: "requested_by_customer",
+              metadata: { bookingId: b.id, bookingRef: b.bookingRef, initiatedBy: "account-deletion" },
+            });
+            refundResults.push({ bookingId: b.id, refundId: refund.id, error: null });
+          } catch (err) {
+            const msg = String((err as Error)?.message ?? err).slice(0, 500);
+            console.error(`[AccountDelete] Auto-refund failed for booking ${b.id}:`, msg);
+            refundResults.push({ bookingId: b.id, refundId: null, error: msg });
+          }
+        }
+      }
+
       await prisma.$transaction([
         prisma.booking.updateMany({
           where: { id: { in: activeBookings.map((b) => b.id) } },
@@ -86,9 +109,22 @@ export async function POST(req: NextRequest) {
           })),
         }),
       ]);
+
+      // Log refund outcomes so admin can reconcile from activity log
+      if (refundResults.length > 0) {
+        await prisma.activityLog.createMany({
+          data: refundResults.map((r) => ({
+            action: r.refundId ? "PAYMENT_REFUNDED" : "PAYMENT_REFUND_FAILED",
+            entity: "Booking",
+            entityId: r.bookingId,
+            details: { initiatedBy: "account-deletion", refundId: r.refundId, error: r.error },
+          })),
+        }).catch(() => {});
+      }
     }
 
-    // Delete the user (cascade deletes sessions, accounts, password resets, activity logs)
+    // Delete the user. ActivityLog rows keep userId as NULL (SetNull) so the
+    // audit trail survives. Sessions, accounts, and password resets cascade-delete.
     await prisma.user.delete({ where: { id: user.id } });
 
     return NextResponse.json({ success: true });
