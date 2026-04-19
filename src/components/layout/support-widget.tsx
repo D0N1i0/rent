@@ -78,7 +78,7 @@ export function SupportWidget({ whatsappNumber = "", phone = "", supportEmail = 
     : null;
 
   return (
-    <div ref={widgetRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div ref={widgetRef} className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 flex flex-col items-end gap-3">
       {/* Panel */}
       {open && (
         <div className={cn(

@@ -11,5 +11,5 @@ export default async function RentalPolicyPage() {
     getPublicSettings(),
   ]);
   if (!page) notFound();
-  return <LegalPageContent page={page} whatsappNumber={settings.whatsappNumber} />;
+  return <LegalPageContent page={page} whatsappNumber={settings.whatsappNumber} supportEmail={settings.supportEmail} />;
 }

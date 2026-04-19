@@ -97,7 +97,7 @@ export function CarCard({
     <div className="car-card group flex flex-col">
       {/* Image */}
       <div className="relative overflow-hidden aspect-[16/10] bg-gray-100">
-        {primaryImage ? (
+        {primaryImage?.url ? (
           <Image
             src={primaryImage.url}
             alt={primaryImage.alt ?? car.name}

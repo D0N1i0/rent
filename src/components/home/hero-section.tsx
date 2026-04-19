@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MapPin, Calendar, Clock, ArrowRight, ChevronDown, Shield, Star, Car } from "lucide-react";
 import type { Location } from "@prisma/client";
 import type { PublicSettings } from "@/lib/settings";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface HeroSectionProps {
   locations: Location[];
@@ -14,6 +15,8 @@ interface HeroSectionProps {
 
 export function HeroSection({ locations, content, settings }: HeroSectionProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const isAl = locale === "al";
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -80,14 +83,14 @@ export function HeroSection({ locations, content, settings }: HeroSectionProps) 
           </div>
           <div>
             <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8">
-              <h2 className="text-xl font-bold text-navy-900 mb-6">Find Your Perfect Car</h2>
+              <h2 className="text-xl font-bold text-navy-900 mb-6">{isAl ? "Gjej Makinën e Përshtatshme" : "Find Your Perfect Car"}</h2>
               <form onSubmit={handleSearch} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Pickup Location</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Vendi i Marrjes" : "Pickup Location"}</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <select value={form.pickupLocationId} onChange={(e) => setForm({ ...form, pickupLocationId: e.target.value })} className="form-input pl-10 appearance-none" required>
-                      <option value="">Select pickup location</option>
+                      <option value="">{isAl ? "Zgjidh vendndodhjen" : "Select pickup location"}</option>
                       {locations.map((loc) => <option key={loc.id} value={loc.id}>{loc.isAirport ? "✈ " : ""}{loc.name}{loc.pickupFee > 0 ? ` (+€${loc.pickupFee})` : ""}</option>)}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -95,18 +98,18 @@ export function HeroSection({ locations, content, settings }: HeroSectionProps) 
                 </div>
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="sameLocation" checked={form.sameLocation} onChange={(e) => setForm({ ...form, sameLocation: e.target.checked })} className="h-4 w-4 rounded border-gray-300 text-navy-900" />
-                  <label htmlFor="sameLocation" className="text-sm text-gray-600">Return to same location</label>
+                  <label htmlFor="sameLocation" className="text-sm text-gray-600">{isAl ? "Ktheje në të njëjtin vend" : "Return to same location"}</label>
                 </div>
-                {!form.sameLocation && <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Drop-off Location</label><div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><select value={form.dropoffLocationId} onChange={(e) => setForm({ ...form, dropoffLocationId: e.target.value })} className="form-input pl-10 appearance-none" required><option value="">Select drop-off location</option>{locations.map((loc) => <option key={loc.id} value={loc.id}>{loc.name}{loc.dropoffFee > 0 ? ` (+€${loc.dropoffFee})` : ""}</option>)}</select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" /></div></div>}
+                {!form.sameLocation && <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Vendi i Kthimit" : "Drop-off Location"}</label><div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><select value={form.dropoffLocationId} onChange={(e) => setForm({ ...form, dropoffLocationId: e.target.value })} className="form-input pl-10 appearance-none" required><option value="">{isAl ? "Zgjidh vendndodhjen" : "Select drop-off location"}</option>{locations.map((loc) => <option key={loc.id} value={loc.id}>{loc.name}{loc.dropoffFee > 0 ? ` (+€${loc.dropoffFee})` : ""}</option>)}</select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" /></div></div>}
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Pickup Date</label><div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="date" value={form.pickupDate} min={new Date().toISOString().split("T")[0]} onChange={(e) => setForm({ ...form, pickupDate: e.target.value })} className="form-input pl-10" required /></div></div>
-                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Pickup Time</label><div className="relative"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><select value={form.pickupTime} onChange={(e) => setForm({ ...form, pickupTime: e.target.value })} className="form-input pl-10 appearance-none">{timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></div></div>
+                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Data e Marrjes" : "Pickup Date"}</label><div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="date" value={form.pickupDate} min={new Date().toISOString().split("T")[0]} onChange={(e) => setForm({ ...form, pickupDate: e.target.value })} className="form-input pl-10" required /></div></div>
+                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Ora e Marrjes" : "Pickup Time"}</label><div className="relative"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><select value={form.pickupTime} onChange={(e) => setForm({ ...form, pickupTime: e.target.value })} className="form-input pl-10 appearance-none">{timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></div></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Return Date</label><div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="date" value={form.returnDate} min={form.pickupDate} onChange={(e) => setForm({ ...form, returnDate: e.target.value })} className="form-input pl-10" required /></div></div>
-                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Return Time</label><div className="relative"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><select value={form.returnTime} onChange={(e) => setForm({ ...form, returnTime: e.target.value })} className="form-input pl-10 appearance-none">{timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></div></div>
+                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Data e Kthimit" : "Return Date"}</label><div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="date" value={form.returnDate} min={form.pickupDate} onChange={(e) => setForm({ ...form, returnDate: e.target.value })} className="form-input pl-10" required /></div></div>
+                  <div><label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Ora e Kthimit" : "Return Time"}</label><div className="relative"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><select value={form.returnTime} onChange={(e) => setForm({ ...form, returnTime: e.target.value })} className="form-input pl-10 appearance-none">{timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></div></div>
                 </div>
-                <button type="submit" className="w-full btn-primary py-3 text-base"><span>Search Available Cars</span><ArrowRight className="h-4 w-4" /></button>
+                <button type="submit" className="w-full btn-primary py-3 text-base"><span>{isAl ? "Kërko Makinat e Disponueshme" : "Search Available Cars"}</span><ArrowRight className="h-4 w-4" /></button>
               </form>
             </div>
           </div>

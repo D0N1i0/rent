@@ -138,7 +138,6 @@ export default function RegisterPage() {
                     id="phone"
                     value={field.value ?? ""}
                     onChange={field.onChange}
-                    error={errors.phone?.message}
                     placeholder="44 123 456"
                   />
                 )}
@@ -200,7 +199,9 @@ export default function RegisterPage() {
                   className="h-4 w-4 mt-0.5 rounded border-gray-300 text-navy-900"
                 />
                 <span className="text-xs text-gray-600">
-                  {locale === "al" ? "Pranoj Kushtet dhe Rregullat" : "I accept the Terms and Conditions"}
+                  {locale === "al"
+                    ? "Pranoj Kushtet dhe Rregullat dhe konfirmoj se jam mbi 18 vjeç"
+                    : "I accept the Terms and Conditions and confirm I am 18 years of age or older"}
                 </span>
               </label>
               {errors.acceptTerms && (

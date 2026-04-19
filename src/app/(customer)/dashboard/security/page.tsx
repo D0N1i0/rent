@@ -21,6 +21,7 @@ export default function SecurityPage() {
 
   // Delete account state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteConfirmed, setShowDeleteConfirmed] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -77,7 +78,15 @@ export default function SecurityPage() {
         setDeleting(false);
         return;
       }
-      await signOut({ callbackUrl: "/?deleted=1" });
+      // Show confirmation before signing out
+      setDeleteError(null);
+      setDeleting(false);
+      // Replace modal content with success message
+      setDeletePassword("");
+      setDeleteConfirm("");
+      setShowDeleteModal(false);
+      setShowDeleteConfirmed(true);
+      setTimeout(() => signOut({ callbackUrl: "/" }), 4000);
     } catch {
       setDeleteError(t.common.errorOccurred);
       setDeleting(false);
@@ -172,6 +181,23 @@ export default function SecurityPage() {
           </button>
         </div>
       </div>
+
+      {/* Account deletion success overlay */}
+      {showDeleteConfirmed && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
+            <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+            <h2 className="font-bold text-navy-900 text-xl mb-2">
+              {locale === "al" ? "Llogaria u fshi" : "Account Deleted"}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {locale === "al"
+                ? "Llogaria juaj është fshirë përgjithmonë. Duke ju ridrejtuar..."
+                : "Your account has been permanently deleted. Redirecting you now..."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {showDeleteModal && (
