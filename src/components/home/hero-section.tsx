@@ -11,9 +11,10 @@ interface HeroSectionProps {
   locations: Location[];
   content: Record<string, string>;
   settings: PublicSettings;
+  activeCarCount?: number;
 }
 
-export function HeroSection({ locations, content, settings }: HeroSectionProps) {
+export function HeroSection({ locations, content, settings, activeCarCount }: HeroSectionProps) {
   const router = useRouter();
   const { locale } = useLanguage();
   const isAl = locale === "al";
@@ -51,7 +52,7 @@ export function HeroSection({ locations, content, settings }: HeroSectionProps) 
   const subtitle = content.hero_subtitle_en || `Premium car rental from Prishtina Airport and across Kosovo. Transparent pricing, clean vehicles, and direct support from ${settings.businessName}.`;
   const badge = content.hero_badge || `${settings.supportLabel} · Airport Pickup`;
   const statCustomers = content.hero_stat_customers || "500+";
-  const statFleet = content.hero_stat_fleet || "30+";
+  const statFleet = content.hero_stat_fleet || (activeCarCount != null ? String(activeCarCount) : "10+");
   const statLocations = content.hero_stat_locations || String(locations.length || 7);
 
   return (
@@ -71,12 +72,20 @@ export function HeroSection({ locations, content, settings }: HeroSectionProps) 
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6">{title}</h1>
             <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-xl">{subtitle}</p>
             <div className="flex flex-wrap gap-4 mb-10">
-              {[{ icon: Shield, label: "Fully Insured" }, { icon: Star, label: "Transparent Pricing" }, { icon: Car, label: "Modern Fleet" }].map(({ icon: Icon, label }) => (
+              {[
+                { icon: Shield, label: isAl ? "Plotësisht i Siguruar" : "Fully Insured" },
+                { icon: Star, label: isAl ? "Çmime Transparente" : "Transparent Pricing" },
+                { icon: Car, label: isAl ? "Flotilë Moderne" : "Modern Fleet" },
+              ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-center gap-2 text-sm text-gray-300"><Icon className="h-4 w-4 text-crimson-400" />{label}</div>
               ))}
             </div>
             <div className="flex items-center gap-8">
-              {[{ value: statCustomers, label: "Happy Customers" }, { value: statFleet, label: "Vehicles" }, { value: statLocations, label: "Locations" }].map(({ value, label }) => (
+              {[
+                { value: statCustomers, label: isAl ? "Klientë të Kënaqur" : "Happy Customers" },
+                { value: statFleet, label: isAl ? "Automjete" : "Vehicles" },
+                { value: statLocations, label: isAl ? "Lokacione" : "Locations" },
+              ].map(({ value, label }) => (
                 <div key={label}><div className="text-2xl font-bold text-white">{value}</div><div className="text-xs text-gray-400">{label}</div></div>
               ))}
             </div>

@@ -41,7 +41,9 @@ function renderMarkdown(content: string): string {
 }
 
 export function LegalPageContent({ page, whatsappNumber = "38344123456", supportEmail = "info@autokos.com" }: LegalPageContentProps) {
-  const htmlContent = renderMarkdown(page.content);
+  // Strip any "Last updated" lines from content to avoid duplicate dates (date shown in header)
+  const cleanedContent = page.content.replace(/^(Last updated|Përditësuar):.+$/gim, "").trim();
+  const htmlContent = renderMarkdown(cleanedContent);
 
   return (
     <div className="min-h-screen bg-gray-50">

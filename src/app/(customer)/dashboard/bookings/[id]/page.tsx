@@ -42,7 +42,7 @@ export default async function CustomerBookingDetailPage({
 
   const settings = await getPublicSettings();
   const hoursUntilPickup = differenceInHours(booking.pickupDateTime, new Date());
-  const canCancel = ["PENDING", "CONFIRMED"].includes(booking.status);
+  const canCancel = ["PENDING", "CONFIRMED"].includes(booking.status) && hoursUntilPickup > 0;
 
   const bookingData = {
     id: booking.id,

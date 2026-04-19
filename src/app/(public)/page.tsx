@@ -13,7 +13,7 @@ import { ContactCta } from "@/components/home/contact-cta";
 import { getPublicSettings } from "@/lib/settings";
 
 async function getHomeData() {
-  const [featuredCars, testimonials, offers, faqItems, locations, homepageSettings, settings] = await Promise.all([
+  const [featuredCars, testimonials, offers, faqItems, locations, homepageSettings, settings, activeCarCount] = await Promise.all([
     prisma.car.findMany({
       where: { isFeatured: true, isActive: true },
       select: {
@@ -33,10 +33,11 @@ async function getHomeData() {
     prisma.location.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.siteSetting.findMany({ where: { group: "homepage" } }),
     getPublicSettings(),
+    prisma.car.count({ where: { isActive: true } }),
   ]);
 
   const homepageContent = Object.fromEntries(homepageSettings.map((item) => [item.key, item.value]));
-  return { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings };
+  return { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings, activeCarCount };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -54,11 +55,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings } = await getHomeData();
+  const { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings, activeCarCount } = await getHomeData();
 
   return (
     <>
-      <HeroSection locations={locations} content={homepageContent} settings={settings} />
+      <HeroSection locations={locations} content={homepageContent} settings={settings} activeCarCount={activeCarCount} />
       <FeaturedCars cars={featuredCars} content={homepageContent} />
       <WhyChooseUs content={homepageContent} />
       <HowItWorks content={homepageContent} />
