@@ -137,22 +137,26 @@ export async function POST(req: NextRequest) {
 
         const fullyRefunded = charge.amount_refunded >= charge.amount;
 
-        await prisma.booking.update({
-          where: { id: booking.id },
-          data: { paymentStatus: fullyRefunded ? "REFUNDED" : "PARTIALLY_PAID" },
-        });
-
-        await prisma.activityLog.create({
-          data: {
-            action: fullyRefunded ? "PAYMENT_REFUNDED" : "PAYMENT_PARTIALLY_REFUNDED",
-            entity: "Booking",
-            entityId: booking.id,
-            details: {
-              amountRefunded: charge.amount_refunded / 100,
-              fullyRefunded,
+        // Wrap both writes atomically — a partial write (paymentStatus updated
+        // but activity log missing) would leave the operator with no audit trail
+        // and the anomaly detector firing false positives.
+        await prisma.$transaction([
+          prisma.booking.update({
+            where: { id: booking.id },
+            data: { paymentStatus: fullyRefunded ? "REFUNDED" : "PARTIALLY_PAID" },
+          }),
+          prisma.activityLog.create({
+            data: {
+              action: fullyRefunded ? "PAYMENT_REFUNDED" : "PAYMENT_PARTIALLY_REFUNDED",
+              entity: "Booking",
+              entityId: booking.id,
+              details: {
+                amountRefunded: charge.amount_refunded / 100,
+                fullyRefunded,
+              },
             },
-          },
-        });
+          }),
+        ]);
         break;
       }
 

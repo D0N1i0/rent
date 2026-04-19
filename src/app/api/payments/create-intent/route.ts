@@ -56,10 +56,43 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ clientSecret: booking.stripeClientSecret });
         }
         if (existing.status === "succeeded") {
-          // Mark booking as paid if webhook missed it
-          await prisma.booking.update({
-            where: { id: bookingId },
-            data: { paymentStatus: "PAID", paymentMethod: "online" },
+          // Missed-webhook recovery: bring booking state fully in sync with
+          // Stripe — same logic the webhook handler runs on payment_intent.succeeded.
+          // paymentStatus !== "PAID" is guaranteed here: the guard above returns
+          // early if already PAID.
+          await prisma.$transaction(async (tx) => {
+              await tx.booking.update({
+                where: { id: bookingId },
+                data: {
+                  paymentStatus: "PAID",
+                  paymentMethod: "online",
+                  status: booking.status === "PENDING" ? "CONFIRMED" : booking.status,
+                  confirmedAt: booking.status === "PENDING" ? new Date() : booking.confirmedAt,
+                },
+              });
+              if (booking.status === "PENDING") {
+                await tx.bookingStatusHistory.create({
+                  data: {
+                    bookingId,
+                    fromStatus: "PENDING",
+                    toStatus: "CONFIRMED",
+                    reason: "Payment confirmed — missed webhook recovery",
+                  },
+                });
+              }
+              await tx.activityLog.create({
+                data: {
+                  action: "PAYMENT_RECEIVED",
+                  entity: "Booking",
+                  entityId: bookingId,
+                  details: {
+                    stripePaymentIntentId: booking.stripePaymentIntentId,
+                    amount: existing.amount / 100,
+                    currency: existing.currency,
+                    recovery: "missed-webhook",
+                  },
+                },
+              });
           });
           return NextResponse.json({ error: "Already paid", alreadyPaid: true }, { status: 400 });
         }

@@ -1,13 +1,13 @@
 // src/lib/booking.ts
 // ─── Booking Service ──────────────────────────────────────────────────────────
 // Centralised booking lifecycle logic: status transitions, ref generation,
-// overlap detection, and history recording.
+// and history recording.
 
-import { randomBytes } from "crypto";
 import type { BookingStatus, PrismaClient } from "@prisma/client";
 
-// Valid status transitions (from → [allowed tos])
-// Keep in sync with VALID_STATUS_TRANSITIONS in src/app/api/admin/bookings/[id]/route.ts
+// Single source-of-truth for valid booking status transitions.
+// All API routes must import isValidTransition / getAllowedTransitions from
+// here — never duplicate this map locally.
 const TRANSITIONS: Partial<Record<BookingStatus, BookingStatus[]>> = {
   PENDING: ["CONFIRMED", "CANCELLED", "REJECTED"],
   CONFIRMED: ["IN_PROGRESS", "CANCELLED"],
@@ -22,43 +22,8 @@ export function isValidTransition(from: BookingStatus, to: BookingStatus): boole
   return TRANSITIONS[from]?.includes(to) ?? false;
 }
 
-/**
- * Generate a booking reference with retry on collision.
- * Format: AK-YYYY-XXXXXX (6 hex chars = 16M possibilities)
- */
-export async function generateUniqueBookingRef(
-  prisma: PrismaClient,
-  maxRetries = 5
-): Promise<string> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const year = new Date().getFullYear();
-    const random = randomBytes(3).toString("hex").toUpperCase();
-    const ref = `AK-${year}-${random}`;
-
-    const existing = await prisma.booking.findUnique({
-      where: { bookingRef: ref },
-      select: { id: true },
-    });
-
-    if (!existing) return ref;
-  }
-  // Fallback: use timestamp + random for guaranteed uniqueness
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = randomBytes(2).toString("hex").toUpperCase();
-  return `AK-${ts}-${rand}`;
-}
-
-/**
- * Check if two date ranges overlap.
- * Uses strict overlap: [start1, end1) overlaps [start2, end2) if start1 < end2 && start2 < end1
- */
-export function datesOverlap(
-  existingStart: Date,
-  existingEnd: Date,
-  newStart: Date,
-  newEnd: Date
-): boolean {
-  return newStart < existingEnd && newEnd > existingStart;
+export function getAllowedTransitions(from: BookingStatus): BookingStatus[] {
+  return TRANSITIONS[from] ?? [];
 }
 
 /**
