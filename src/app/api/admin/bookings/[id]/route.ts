@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
+import { isValidTransition, getAllowedTransitions } from "@/lib/booking";
 import { z } from "zod";
 import { sendBookingStatusEmail } from "@/lib/email";
 
@@ -12,16 +13,6 @@ async function requireAdmin() {
   if (!session?.user || !isAdminRole(getSessionRole(session))) return null;
   return session;
 }
-
-const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ["CONFIRMED", "CANCELLED", "REJECTED"],
-  CONFIRMED: ["IN_PROGRESS", "CANCELLED"],
-  IN_PROGRESS: ["COMPLETED", "NO_SHOW"],
-  COMPLETED: [],
-  CANCELLED: [],
-  NO_SHOW: [],
-  REJECTED: [],
-};
 
 const updateSchema = z.object({
   status: z
@@ -111,10 +102,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
     if (!current) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-    // Validate status transition
+    // Validate status transition against the single source of truth in booking.ts
     if (updates.status && updates.status !== current.status) {
-      const allowed = VALID_STATUS_TRANSITIONS[current.status] ?? [];
-      if (!allowed.includes(updates.status)) {
+      if (!isValidTransition(current.status, updates.status)) {
+        const allowed = getAllowedTransitions(current.status);
         return NextResponse.json(
           {
             error: `Cannot transition booking from ${current.status} to ${updates.status}. Allowed: ${allowed.join(", ") || "none"}`,
