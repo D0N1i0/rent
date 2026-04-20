@@ -44,7 +44,7 @@ export function LegalPageContent({ page, whatsappNumber = "38344123456", support
   // Strip any "Last updated" lines from content to avoid duplicate dates (date shown in header).
   // Handles plain text, bold (**Last updated: ...**), and Albanian equivalents.
   const cleanedContent = page.content
-    .replace(/^\*{0,2}(Last updated|Përditësuar)[:\s].+\*{0,2}$/gim, "")
+    .replace(/^.*?\b(Last updated|Përditësuar)\b.*$/gim, "")
     .trim();
   const htmlContent = renderMarkdown(cleanedContent);
 

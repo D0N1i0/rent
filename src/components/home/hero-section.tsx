@@ -48,9 +48,15 @@ export function HeroSection({ locations, content, settings, activeCarCount }: He
   }
 
   const timeOptions = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 === 0 ? "00" : "30"}`);
-  const title = content.hero_title_en || `Drive Kosovo in Style with ${settings.businessName}`;
-  const subtitle = content.hero_subtitle_en || `Premium car rental from Prishtina Airport and across Kosovo. Transparent pricing, clean vehicles, and direct support from ${settings.businessName}.`;
-  const badge = content.hero_badge || `${settings.supportLabel} · Airport Pickup`;
+  const title = isAl
+    ? (content.hero_title_sq || "Udhëto Kosovën me Stil")
+    : (content.hero_title_en || `Drive Kosovo in Style with ${settings.businessName}`);
+  const subtitle = isAl
+    ? (content.hero_subtitle_sq || `Marrje me qira veturash premium nga Aeroporti i Prishtinës dhe kudo në Kosovë. Çmime transparente dhe mbështetje direkte nga ${settings.businessName}.`)
+    : (content.hero_subtitle_en || `Premium car rental from Prishtina Airport and across Kosovo. Transparent pricing, clean vehicles, and direct support from ${settings.businessName}.`);
+  const badge = isAl
+    ? (content.hero_badge_sq || `${settings.supportLabel} · Marrje nga Aeroporti`)
+    : (content.hero_badge || `${settings.supportLabel} · Airport Pickup`);
   const statCustomers = content.hero_stat_customers || "500+";
   const statFleet = content.hero_stat_fleet || (activeCarCount != null ? String(activeCarCount) : "10+");
   const statLocations = content.hero_stat_locations || String(locations.length || 7);

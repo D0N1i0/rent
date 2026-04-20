@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { CheckCircle, Calendar, MapPin, Car, Mail, Phone, ArrowRight } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, Car, Mail, Phone, ArrowRight, CalendarPlus } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { getPublicSettings } from "@/lib/settings";
 
@@ -28,6 +28,17 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
   if (!booking) notFound();
 
   const settings = await getPublicSettings();
+
+  // Build Google Calendar "Add to Calendar" URL
+  function toGCalDate(d: Date) {
+    return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  }
+  const gcalUrl = new URL("https://calendar.google.com/calendar/render");
+  gcalUrl.searchParams.set("action", "TEMPLATE");
+  gcalUrl.searchParams.set("text", `Car Rental – ${booking.car.name} (${booking.bookingRef})`);
+  gcalUrl.searchParams.set("dates", `${toGCalDate(booking.pickupDateTime)}/${toGCalDate(booking.dropoffDateTime)}`);
+  gcalUrl.searchParams.set("details", `AutoKos car rental\nVehicle: ${booking.car.name}\nPickup: ${booking.pickupLocation.name}\nDrop-off: ${booking.dropoffLocation.name}\nRef: ${booking.bookingRef}`);
+  gcalUrl.searchParams.set("location", booking.pickupLocation.name);
 
   // VAT breakdown (Kosovo 18%)
   const VAT_RATE = 0.18;
@@ -167,6 +178,15 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
         <div className="flex flex-wrap gap-3 justify-center">
           <Link href="/" className="btn-outline text-sm px-6 py-2.5">Back to Homepage</Link>
+          <a
+            href={gcalUrl.toString()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 text-sm font-medium px-6 py-2.5 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            <CalendarPlus className="h-4 w-4" />
+            Add to Calendar
+          </a>
           <Link href={`/dashboard/bookings/${booking.id}`} className="btn-secondary text-sm px-6 py-2.5 flex items-center gap-2">
             View My Booking <ArrowRight className="h-4 w-4" />
           </Link>

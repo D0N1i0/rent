@@ -17,6 +17,18 @@ import { CountrySelect } from "@/components/ui/country-select";
 import { CityInput } from "@/components/ui/city-input";
 import { cn } from "@/lib/utils";
 
+/**
+ * Handles legacy nationality format "us United States" → "United States"
+ * New entries store just the adjective "American", so pass those through unchanged.
+ */
+function formatNationality(value: string | null | undefined): string {
+  if (!value) return "—";
+  // Legacy format: two lowercase letters then a space then the country name
+  const legacyMatch = value.match(/^[a-z]{2}\s+(.+)$/);
+  if (legacyMatch) return legacyMatch[1];
+  return value;
+}
+
 interface UserDetailClientProps {
   user: any;
 }
@@ -323,7 +335,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                 { label: "Email", value: user.email },
                 { label: "Phone", value: user.phone ?? "—", icon: Phone },
                 { label: "Date of Birth", value: user.dateOfBirth ? formatDate(user.dateOfBirth) : "—" },
-                { label: "Nationality", value: user.nationality ?? "—" },
+                { label: "Nationality", value: formatNationality(user.nationality) },
                 { label: "ID / Passport No.", value: user.idNumber ?? "—", icon: FileText },
                 { label: "Driving Licence", value: user.licenseNumber ?? "—", icon: FileText },
                 {

@@ -104,6 +104,7 @@ export function CarCard({
             src={primaryImage.url}
             alt={primaryImage.alt ?? car.name}
             fill
+            unoptimized={primaryImage.url.endsWith(".svg")}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             onError={() => setImgError(true)}

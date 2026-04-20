@@ -368,26 +368,21 @@ async function main() {
     });
     createdCars.push(car);
 
-    // Add placeholder image
-    await prisma.carImage.deleteMany({ where: { carId: car.id } });
-    await prisma.carImage.create({
-      data: {
-        carId: car.id,
-        url: `/images/cars/${carData.slug}-1.jpg`,
-        alt: `${carData.name} - AutoKos`,
-        isPrimary: true,
-        sortOrder: 1,
-      },
-    });
-    await prisma.carImage.create({
-      data: {
-        carId: car.id,
-        url: `/images/cars/${carData.slug}-2.jpg`,
-        alt: `${carData.name} Interior - AutoKos`,
-        isPrimary: false,
-        sortOrder: 2,
-      },
-    });
+    // Only seed a placeholder image when no images exist yet.
+    // Real images must be uploaded via the Admin → Media panel.
+    // Running the seed on a live DB will NOT overwrite any uploaded images.
+    const existingImageCount = await prisma.carImage.count({ where: { carId: car.id } });
+    if (existingImageCount === 0) {
+      await prisma.carImage.create({
+        data: {
+          carId: car.id,
+          url: `/images/car-placeholder.svg`,
+          alt: `${carData.name} - AutoKos`,
+          isPrimary: true,
+          sortOrder: 1,
+        },
+      });
+    }
   }
 
   // ─── LOCATIONS ────────────────────────────────────────────────────────────────

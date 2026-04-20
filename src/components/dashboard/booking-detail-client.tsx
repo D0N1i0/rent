@@ -27,6 +27,7 @@ import {
 import { CancelBookingButton } from "@/components/booking/cancel-booking-button";
 import { DocumentUpload } from "@/components/booking/document-upload";
 import { StripePaymentForm } from "@/components/booking/stripe-payment-form";
+import { CarImageWithFallback } from "@/components/ui/car-image-with-fallback";
 import { useLanguage, useT } from "@/lib/i18n/context";
 
 interface BookingDetailClientProps {
@@ -147,11 +148,11 @@ export function BookingDetailClient({
         : "Note: Late cancellations within 48 hours of pickup may incur a fee.",
     uploadDocuments: locale === "al" ? "Ngarko Dokumentet" : "Upload Documents",
     invoiceReceipt: locale === "al" ? "Faturë / Kupon" : "Invoice / Receipt",
-    downloadInvoice: locale === "al" ? "Shkarko Faturën" : "Download Invoice",
+    downloadInvoice: locale === "al" ? "Hap Faturën" : "View Invoice",
     printNote:
       locale === "al"
-        ? "Hapet si faqe e printueshme. Përdor Ctrl+P ose printimin e shfletuesit për ta ruajtur si PDF."
-        : "Opens as a printable page. Use Ctrl+P or browser print to save as PDF.",
+        ? "Hapet në skedë të re. Shtypni Ctrl+P → 'Ruaj si PDF' për ta shkarkuar."
+        : "Opens in a new tab. Press Ctrl+P → 'Save as PDF' to download.",
     needHelp: locale === "al" ? "Keni Nevojë për Ndihmë?" : "Need Help?",
     quoteReference: locale === "al" ? "Citoni referencën" : "Quote reference",
   };
@@ -191,18 +192,11 @@ export function BookingDetailClient({
           </div>
           <div className="flex items-center gap-4">
             <div className="h-20 w-28 bg-gray-100 rounded-xl overflow-hidden shrink-0">
-              {booking.car.images[0]?.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={booking.car.images[0].url}
-                  alt={booking.car.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <Car className="h-8 w-8 text-gray-300" />
-                </div>
-              )}
+              <CarImageWithFallback
+                url={booking.car.images[0]?.url}
+                alt={booking.car.name}
+                iconSize="h-8 w-8"
+              />
             </div>
             <div>
               <p className="text-xs text-crimson-500 font-semibold">{booking.car.category.name}</p>

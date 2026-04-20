@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatCurrency, formatDateTime, getStatusColor, getPaymentStatusColor } from "@/lib/utils";
 import { BookingActionButtons } from "@/components/admin/booking-action-buttons";
 import { BookingNotesEditor } from "@/components/admin/booking-notes-editor";
+import { CarImageWithFallback } from "@/components/ui/car-image-with-fallback";
 import { Car, MapPin, Calendar, User, CreditCard, ChevronLeft, Clock, AlertTriangle, Receipt } from "lucide-react";
 
 export default async function AdminBookingDetailPage({
@@ -188,18 +189,13 @@ export default async function AdminBookingDetailPage({
             <h2 className="font-bold text-navy-900">Vehicle</h2>
           </div>
           <div className="flex items-center gap-3 mb-3">
-            {booking.car.images[0]?.url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={booking.car.images[0].url}
+            <div className="h-14 w-20 rounded-lg overflow-hidden">
+              <CarImageWithFallback
+                url={booking.car.images[0]?.url}
                 alt={booking.car.name}
-                className="h-14 w-20 object-cover rounded-lg bg-gray-100"
+                fallbackClassName="flex items-center justify-center h-full w-full bg-gray-100 rounded-lg"
               />
-            ) : (
-              <div className="h-14 w-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Car className="h-6 w-6 text-gray-300" />
-              </div>
-            )}
+            </div>
             <div>
               <p className="font-semibold text-navy-900">{booking.car.name}</p>
               <p className="text-sm text-gray-500">{booking.car.year}</p>

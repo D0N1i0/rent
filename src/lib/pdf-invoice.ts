@@ -109,6 +109,11 @@ export function generateInvoiceHTML(data: InvoiceData): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Invoice ${data.bookingRef} – AutoKos</title>
+<script>
+  // Auto-open print dialog when page loads so user can immediately save as PDF.
+  // The no-print buttons are hidden during printing via CSS.
+  window.addEventListener('load', function() { window.print(); });
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #111827; background: #fff; padding: 40px; max-width: 800px; margin: 0 auto; }
