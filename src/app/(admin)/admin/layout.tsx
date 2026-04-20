@@ -1,8 +1,7 @@
 // src/app/(admin)/admin/layout.tsx
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminLayoutClient } from "@/components/admin/admin-layout-client";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -19,18 +18,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <AdminSidebar
-        pendingBookingsCount={pendingBookingsCount}
-        unreadContactCount={unreadContactCount}
-        newFeedbackCount={newFeedbackCount}
-      />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <AdminHeader user={session.user} />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AdminLayoutClient
+      user={session.user}
+      pendingBookingsCount={pendingBookingsCount}
+      unreadContactCount={unreadContactCount}
+      newFeedbackCount={newFeedbackCount}
+    >
+      {children}
+    </AdminLayoutClient>
   );
 }

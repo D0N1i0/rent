@@ -5,6 +5,54 @@ import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 import { Activity, Search } from "lucide-react";
 
+/** Render a human-readable summary from structured activity log details */
+function renderDetails(action: string, details: unknown): string {
+  if (!details || typeof details !== "object") return "—";
+  const d = details as Record<string, unknown>;
+
+  switch (action) {
+    case "BOOKING_STATUS_CHANGED":
+      return `${d.from ?? "?"} → ${d.to ?? "?"}${d.reason ? ` · "${d.reason}"` : ""}`;
+    case "BOOKING_CREATED":
+      return `Ref: ${d.bookingRef ?? "?"} · ${d.carName ?? ""}${d.totalAmount != null ? ` · €${d.totalAmount}` : ""}`;
+    case "BOOKING_CANCELLED":
+      return `By: ${d.cancelledBy ?? "?"}${d.reason ? ` · "${d.reason}"` : ""}`;
+    case "PAYMENT_RECEIVED":
+      return `€${d.amount ?? "?"} received${d.paymentMethod ? ` via ${d.paymentMethod}` : ""}`;
+    case "PAYMENT_FAILED":
+      return `${d.lastError ?? "Unknown error"}`;
+    case "PAYMENT_REFUNDED":
+    case "PAYMENT_PARTIALLY_REFUNDED":
+      return `€${d.amountRefunded ?? d.amount ?? "?"} refunded`;
+    case "USER_REGISTERED":
+      return `${d.email ?? ""}${d.name ? ` (${d.name})` : ""}`;
+    case "USER_UPDATED":
+      return d.fields
+        ? `Updated: ${(d.fields as string[]).join(", ")}`
+        : "Profile updated";
+    case "PASSWORD_CHANGED":
+      return "Password changed";
+    case "ACCOUNT_DELETED":
+      return d.email ? `${d.email}` : "Account removed";
+    default:
+      // Fallback: show key=value pairs, skip nulls
+      return Object.entries(d)
+        .filter(([, v]) => v != null)
+        .slice(0, 3)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" · ") || "—";
+  }
+}
+
+/** Build a direct admin link for a given entity type + id */
+function entityLink(entity: string | null, entityId: string | null): string | null {
+  if (!entity || !entityId) return null;
+  if (entity === "Booking") return `/admin/bookings/${entityId}`;
+  if (entity === "User") return `/admin/users/${entityId}`;
+  if (entity === "Car") return `/admin/cars/${entityId}`;
+  return null;
+}
+
 interface Props {
   searchParams: Promise<{ page?: string; action?: string; search?: string }>;
 }
@@ -146,15 +194,26 @@ export default async function AdminActivityLogPage({ searchParams }: Props) {
                       </span>
                     </td>
                     <td className="p-4 text-gray-600 text-xs">
-                      {log.entity}
-                      {log.entityId && (
-                        <span className="text-gray-400 ml-1 font-mono">
-                          #{log.entityId.slice(0, 8)}
-                        </span>
-                      )}
+                      {(() => {
+                        const link = entityLink(log.entity, log.entityId);
+                        return link ? (
+                          <Link href={link} className="text-crimson-500 hover:underline font-medium">
+                            {log.entity} <span className="text-gray-400 font-mono">#{(log.entityId ?? "").slice(0, 8)}</span>
+                          </Link>
+                        ) : (
+                          <>
+                            {log.entity}
+                            {log.entityId && (
+                              <span className="text-gray-400 ml-1 font-mono">
+                                #{log.entityId.slice(0, 8)}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
-                    <td className="p-4 text-gray-500 text-xs max-w-xs truncate">
-                      {log.details != null ? JSON.stringify(log.details).slice(0, 80) : "—"}
+                    <td className="p-4 text-gray-600 text-xs max-w-xs">
+                      {renderDetails(log.action, log.details)}
                     </td>
                   </tr>
                 ))}

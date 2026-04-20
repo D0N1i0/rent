@@ -1,8 +1,10 @@
 // src/lib/utils.ts
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { differenceInDays, differenceInHours, format, parseISO } from "date-fns";
+import { differenceInDays, differenceInHours, parseISO } from "date-fns";
 import { randomBytes } from "crypto";
+
+const PRISTINA_TZ = "Europe/Pristina";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -17,12 +19,29 @@ export function formatCurrency(amount: number, currency = "€"): string {
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? parseISO(date) : date;
-  return format(d, "MMM d, yyyy");
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: PRISTINA_TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(d);
 }
 
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === "string" ? parseISO(date) : date;
-  return format(d, "MMM d, yyyy 'at' HH:mm");
+  const datePart = new Intl.DateTimeFormat("en-US", {
+    timeZone: PRISTINA_TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(d);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    timeZone: PRISTINA_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+  return `${datePart} at ${timePart}`;
 }
 
 export function calculateRentalDays(pickupDT: Date, returnDT: Date): number {

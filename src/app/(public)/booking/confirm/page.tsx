@@ -29,6 +29,12 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
   const settings = await getPublicSettings();
 
+  // VAT breakdown (Kosovo 18%)
+  const VAT_RATE = 0.18;
+  const preTaxTotal = booking.subtotal + booking.extrasTotal + booking.pickupFee + booking.dropoffFee;
+  const vatAmount = preTaxTotal * VAT_RATE;
+  const totalIncVat = preTaxTotal + vatAmount;
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="page-container max-w-2xl mx-auto">
@@ -101,9 +107,17 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
+            <div className="flex justify-between text-gray-600 border-t border-gray-200 pt-2">
+              <span>Subtotal (excl. VAT)</span>
+              <span>{formatCurrency(preTaxTotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>VAT (18%)</span>
+              <span>+{formatCurrency(vatAmount)}</span>
+            </div>
             <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-navy-900">
-              <span>Total</span>
-              <span className="text-crimson-600">{formatCurrency(booking.totalAmount)}</span>
+              <span>Total (incl. VAT)</span>
+              <span className="text-crimson-600">{formatCurrency(totalIncVat)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-400">
               <span>Security deposit (pre-authorised at pickup)</span>
@@ -153,7 +167,10 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
         <div className="flex flex-wrap gap-3 justify-center">
           <Link href="/" className="btn-outline text-sm px-6 py-2.5">Back to Homepage</Link>
-          <Link href="/fleet" className="btn-primary text-sm px-6 py-2.5">Browse More Cars <ArrowRight className="h-4 w-4" /></Link>
+          <Link href={`/dashboard/bookings/${booking.id}`} className="btn-secondary text-sm px-6 py-2.5 flex items-center gap-2">
+            View My Booking <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/fleet" className="btn-primary text-sm px-6 py-2.5">Browse More Cars</Link>
         </div>
       </div>
     </div>
