@@ -1,20 +1,28 @@
 // src/components/admin/admin-header.tsx
 "use client";
 import { signOut } from "next-auth/react";
-import { Bell, LogOut, ExternalLink } from "lucide-react";
+import { LogOut, ExternalLink, Menu } from "lucide-react";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/context";
 
 interface AdminHeaderProps {
   user: { name?: string | null; email?: string | null };
+  onMenuClick?: () => void;
 }
 
-export function AdminHeader({ user }: AdminHeaderProps) {
+export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
   const { locale } = useLanguage();
   return (
-    <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 shrink-0">
-      <div className="flex items-center gap-2">
+    <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 shrink-0">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-navy-900 hover:bg-gray-100 transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         <h2 className="text-sm font-semibold text-gray-700">{locale === "al" ? "Paneli i Administratorit" : "Admin Panel"}</h2>
       </div>
       <div className="flex items-center gap-3">

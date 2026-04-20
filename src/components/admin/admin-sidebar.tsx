@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Car, Calendar, Users, MapPin, Package, Tag, Star,
   HelpCircle, Home, Settings, FileText, Image, Car as CarIcon,
-  BarChart2, Activity, ChevronRight, Mail, Globe, MessageSquare
+  BarChart2, Activity, ChevronRight, Mail, Globe, MessageSquare, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/context";
@@ -15,9 +15,17 @@ interface AdminSidebarProps {
   pendingBookingsCount?: number;
   unreadContactCount?: number;
   newFeedbackCount?: number;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function AdminSidebar({ pendingBookingsCount = 0, unreadContactCount = 0, newFeedbackCount = 0 }: AdminSidebarProps) {
+export function AdminSidebar({
+  pendingBookingsCount = 0,
+  unreadContactCount = 0,
+  newFeedbackCount = 0,
+  isOpen = false,
+  onClose,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const { locale } = useLanguage();
 
@@ -72,9 +80,9 @@ export function AdminSidebar({ pendingBookingsCount = 0, unreadContactCount = 0,
   };
 
   return (
-    <aside className="hidden lg:flex w-64 flex-col bg-navy-900 text-white shrink-0 overflow-y-auto">
+    <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex-col bg-navy-900 text-white shrink-0 overflow-y-auto transition-transform duration-300 lg:static lg:translate-x-0 lg:flex ${isOpen ? "flex translate-x-0" : "-translate-x-full lg:flex"}`}>
       {/* Logo */}
-      <div className="p-5 border-b border-white/10">
+      <div className="p-5 border-b border-white/10 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="h-8 w-8 bg-crimson-500 rounded-lg flex items-center justify-center">
             <CarIcon className="h-5 w-5 text-white" />
@@ -86,6 +94,11 @@ export function AdminSidebar({ pendingBookingsCount = 0, unreadContactCount = 0,
             </span>
           </div>
         </Link>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors" aria-label="Close menu">
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Nav */}

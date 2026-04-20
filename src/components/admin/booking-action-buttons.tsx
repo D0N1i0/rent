@@ -23,6 +23,14 @@ export function BookingActionButtons({
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Modal state for actions needing a reason
+  const [confirmModal, setConfirmModal] = useState<{
+    action: string;
+    payload: Record<string, unknown>;
+    label: string;
+    message: string;
+    buttonLabel: string;
+    buttonClass: string;
+  } | null>(null);
   const [reasonModal, setReasonModal] = useState<{
     action: string;
     payload: Record<string, unknown>;
@@ -52,6 +60,25 @@ export function BookingActionButtons({
     } finally {
       setLoading(null);
     }
+  };
+
+  const openConfirmModal = (
+    action: string,
+    payload: Record<string, unknown>,
+    label: string,
+    message: string,
+    buttonLabel: string,
+    buttonClass: string
+  ) => {
+    setError(null);
+    setConfirmModal({ action, payload, label, message, buttonLabel, buttonClass });
+  };
+
+  const submitConfirm = async () => {
+    if (!confirmModal) return;
+    const { payload, action } = confirmModal;
+    setConfirmModal(null);
+    await update(payload, action);
   };
 
   const openReasonModal = (
@@ -88,7 +115,14 @@ export function BookingActionButtons({
         <div className="flex flex-wrap gap-2">
           {currentStatus === "PENDING" && (
             <button
-              onClick={() => update({ status: "CONFIRMED" }, "confirm")}
+              onClick={() => openConfirmModal(
+                "confirm",
+                { status: "CONFIRMED" },
+                "Confirm Booking",
+                "Are you sure you want to confirm this booking? The customer will be notified.",
+                "Confirm Booking",
+                "bg-blue-600 hover:bg-blue-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
@@ -110,7 +144,14 @@ export function BookingActionButtons({
 
           {currentStatus === "CONFIRMED" && (
             <button
-              onClick={() => update({ status: "IN_PROGRESS" }, "pickup")}
+              onClick={() => openConfirmModal(
+                "pickup",
+                { status: "IN_PROGRESS" },
+                "Mark as Picked Up",
+                "Confirm that the customer has picked up the vehicle and the rental is now in progress.",
+                "Mark Picked Up",
+                "bg-purple-600 hover:bg-purple-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
             >
@@ -121,7 +162,14 @@ export function BookingActionButtons({
 
           {currentStatus === "IN_PROGRESS" && (
             <button
-              onClick={() => update({ status: "COMPLETED" }, "complete")}
+              onClick={() => openConfirmModal(
+                "complete",
+                { status: "COMPLETED" },
+                "Mark as Returned",
+                "Confirm that the vehicle has been returned and the rental is complete.",
+                "Mark Returned",
+                "bg-green-600 hover:bg-green-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
@@ -132,7 +180,14 @@ export function BookingActionButtons({
 
           {currentStatus === "IN_PROGRESS" && (
             <button
-              onClick={() => update({ status: "NO_SHOW" }, "noshow")}
+              onClick={() => openConfirmModal(
+                "noshow",
+                { status: "NO_SHOW" },
+                "Mark as No Show",
+                "Confirm that the customer did not show up for their booking. This action cannot be undone.",
+                "Mark No Show",
+                "bg-gray-600 hover:bg-gray-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
@@ -186,6 +241,30 @@ export function BookingActionButtons({
           )}
         </div>
       </div>
+
+      {/* Simple confirmation modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-navy-900 mb-2">{confirmModal.label}</h3>
+            <p className="text-sm text-gray-600 mb-5">{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 btn-secondary py-2.5 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitConfirm}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${confirmModal.buttonClass}`}
+              >
+                {confirmModal.buttonLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reason modal */}
       {reasonModal && (
