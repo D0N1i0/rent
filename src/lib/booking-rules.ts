@@ -46,11 +46,6 @@ export function bookingConflictStatusFilter(now: Date = new Date()): Prisma.Book
 }
 
 /**
- * Business timezone. Kosovo observes CET (UTC+1) in winter and CEST (UTC+2)
- * in summer. All customer-facing pickup/return times are wall-clock times
- * in this zone, regardless of where the server runs.
- */
-/**
  * Convert a Kosovo wall-clock date+time string into the correct UTC instant.
  *
  * `parseISO("2026-07-01T10:00:00")` without an offset depends on the host's
