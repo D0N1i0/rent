@@ -34,6 +34,7 @@ export function ContactPageClient({
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
+    mode: "onTouched",
   });
 
   const onSubmit = async (data: ContactValues) => {
@@ -94,15 +95,15 @@ export function ContactPageClient({
             </div>
 
             <a
-              href={`https://wa.me/${whatsappNumber}?text=Hello ${businessName}! I have a question.`}
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(locale === "al" ? `Përshëndetje ${businessName}! Kam një pyetje.` : `Hello ${businessName}! I have a question.`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-5 bg-green-600 hover:bg-green-500 text-white rounded-xl transition-colors"
             >
               <MessageCircle className="h-6 w-6 shrink-0" />
               <div>
-                <p className="font-bold">Chat on WhatsApp</p>
-                <p className="text-sm text-green-100">Instant response — available 24/7</p>
+                <p className="font-bold">{locale === "al" ? "Bisedoni në WhatsApp" : "Chat on WhatsApp"}</p>
+                <p className="text-sm text-green-100">{locale === "al" ? "Përgjigje e menjëhershme — i disponueshëm 24/7" : "Instant response — available 24/7"}</p>
               </div>
             </a>
           </div>

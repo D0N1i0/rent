@@ -4,7 +4,7 @@ import { twMerge } from "tailwind-merge";
 import { differenceInDays, differenceInHours } from "date-fns";
 import { randomBytes } from "crypto";
 
-export const BUSINESS_TIMEZONE = "Europe/Belgrade" as const;
+export const BUSINESS_TIMEZONE = "Europe/Pristina" as const;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

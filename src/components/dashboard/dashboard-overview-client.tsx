@@ -3,7 +3,7 @@
 // Client component for the dashboard overview page — handles i18n translations.
 
 import Link from "next/link";
-import { Car, Calendar, ArrowRight, Clock, CheckCircle, Lock, User, AlertCircle, Home } from "lucide-react";
+import { Car, Calendar, ArrowRight, Clock, CheckCircle, Lock, User, AlertCircle } from "lucide-react";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
 import { useT } from "@/lib/i18n/context";
 
@@ -56,21 +56,17 @@ export function DashboardOverviewClient({
         <div className="page-container py-8">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-sm text-gray-400 flex items-center gap-1.5 mb-1">
-                <Home className="h-3.5 w-3.5" />
-                <Link href="/" className="hover:text-crimson-500 transition-colors">{t.common.back}</Link>
-              </p>
               <h1 className="font-display text-2xl md:text-3xl font-bold text-navy-900">
                 {user?.firstName ? `Welcome back, ${user.firstName}!` : t.dashboard.title}
               </h1>
               <p className="text-gray-500 mt-1">{t.dashboard.overview}</p>
             </div>
             <Link
-              href="/"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 hover:text-navy-900 transition-colors font-medium"
+              href="/fleet"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg btn-primary text-sm font-medium"
             >
-              <Home className="h-4 w-4" />
-              {t.common.back}
+              <Car className="h-4 w-4" />
+              {t.nav.fleet}
             </Link>
           </div>
         </div>

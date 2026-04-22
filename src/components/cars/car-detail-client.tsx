@@ -32,8 +32,8 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
   const router = useRouter();
   const { locale } = useLanguage();
   const [imgIdx, setImgIdx] = useState(0);
+  const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
   const [availability, setAvailability] = useState<{
     checking: boolean;
     available: boolean | null;
@@ -218,7 +218,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
             {/* Image gallery */}
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <div className="relative aspect-[16/10] bg-gray-100">
-                {images[imgIdx]?.url && !failedImageIds.has(images[imgIdx].id) ? (
+                {images[imgIdx]?.url && !imgErrors.has(imgIdx) ? (
                   <Image
                     src={images[imgIdx].url}
                     alt={images[imgIdx].alt ?? car.name}
@@ -226,7 +226,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                     className="object-cover"
                     priority
                     sizes="(max-width: 1024px) 100vw, 66vw"
-                    onError={() => setFailedImageIds((prev) => new Set(prev).add(images[imgIdx].id))}
+                    onError={() => setImgErrors(prev => new Set(prev).add(imgIdx))}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -235,7 +235,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1" />
                       </svg>
-                      <p className="text-sm">No image available</p>
+                      <p className="text-sm">{locale === "al" ? "Nuk ka imazh" : "No image available"}</p>
                     </div>
                   </div>
                 )}
@@ -267,8 +267,9 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                       onClick={() => setImgIdx(i)}
                       className={cn("relative h-16 w-24 shrink-0 rounded-lg overflow-hidden border-2 transition-colors", i === imgIdx ? "border-navy-900" : "border-transparent hover:border-gray-300")}
                     >
-                      {img.url && !failedImageIds.has(img.id) ? (
-                        <Image src={img.url} alt={img.alt ?? ""} fill className="object-cover" sizes="96px" onError={() => setFailedImageIds((prev) => new Set(prev).add(img.id))} />
+                      {img.url && !imgErrors.has(i) ? (
+                        <Image src={img.url} alt={img.alt ?? ""} fill className="object-cover" sizes="96px"
+                          onError={() => setImgErrors(prev => new Set(prev).add(i))} />
                       ) : (
                         <div className="bg-gray-100 h-full" />
                       )}
@@ -350,36 +351,44 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
 
             {/* Rental policies */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h2 className="font-bold text-navy-900 text-lg mb-4">Rental Conditions</h2>
+              <h2 className="font-bold text-navy-900 text-lg mb-4">{locale === "al" ? "Kushtet e Qirasë" : "Rental Conditions"}</h2>
               <div className="grid sm:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-3">
                   <div>
-                    <p className="font-semibold text-navy-900">Fuel Policy</p>
+                    <p className="font-semibold text-navy-900">{locale === "al" ? "Politika e Karburantit" : "Fuel Policy"}</p>
                     <p className="text-gray-600">{car.fuelPolicy ?? "Full to Full"}</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-navy-900">Mileage</p>
+                    <p className="font-semibold text-navy-900">{locale === "al" ? "Kilometrazhi" : "Mileage"}</p>
                     <p className="text-gray-600">
-                      {car.mileageLimit ? `${car.mileageLimit} km/day included${car.extraKmFee ? `. Extra: €${car.extraKmFee}/km` : ""}` : "Unlimited mileage included"}
+                      {car.mileageLimit
+                        ? locale === "al"
+                          ? `${car.mileageLimit} km/ditë i përfshirë${car.extraKmFee ? `. Shtesë: €${car.extraKmFee}/km` : ""}`
+                          : `${car.mileageLimit} km/day included${car.extraKmFee ? `. Extra: €${car.extraKmFee}/km` : ""}`
+                        : locale === "al" ? "Kilometrazh i pakufizuar i përfshirë" : "Unlimited mileage included"}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold text-navy-900">Minimum Driver Age</p>
-                    <p className="text-gray-600">{car.minAge} years</p>
+                    <p className="font-semibold text-navy-900">{locale === "al" ? "Mosha Minimale e Shoferit" : "Minimum Driver Age"}</p>
+                    <p className="text-gray-600">{car.minAge} {locale === "al" ? "vjeç" : "years"}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <p className="font-semibold text-navy-900">Driving Licence</p>
-                    <p className="text-gray-600">Held for minimum {car.licenseYears} year{car.licenseYears !== 1 ? "s" : ""}</p>
+                    <p className="font-semibold text-navy-900">{locale === "al" ? "Patenta e Shoferimit" : "Driving Licence"}</p>
+                    <p className="text-gray-600">
+                      {locale === "al"
+                        ? `E mbajtur për minimum ${car.licenseYears} vit${car.licenseYears !== 1 ? "e" : ""}`
+                        : `Held for minimum ${car.licenseYears} year${car.licenseYears !== 1 ? "s" : ""}`}
+                    </p>
                   </div>
                   <div>
-                    <p className="font-semibold text-navy-900">Security Deposit</p>
-                    <p className="text-gray-600">{formatCurrency(car.deposit)} (pre-authorised, not charged)</p>
+                    <p className="font-semibold text-navy-900">{locale === "al" ? "Depozita e Sigurisë" : "Security Deposit"}</p>
+                    <p className="text-gray-600">{formatCurrency(car.deposit)} ({locale === "al" ? "para-autorizuar, nuk tarifohet" : "pre-authorised, not charged"})</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-navy-900">Insurance</p>
-                    <p className="text-gray-600">Third-party liability included. CDW available.</p>
+                    <p className="font-semibold text-navy-900">{locale === "al" ? "Sigurimi" : "Insurance"}</p>
+                    <p className="text-gray-600">{locale === "al" ? "Përgjegjësia ndaj palës së tretë e përfshirë. CDW i disponueshëm." : "Third-party liability included. CDW available as extra."}</p>
                   </div>
                 </div>
               </div>
@@ -388,7 +397,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
             {/* Extras selection */}
             {extras.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 className="font-bold text-navy-900 text-lg mb-4">Optional Extras &amp; Services</h2>
+                <h2 className="font-bold text-navy-900 text-lg mb-4">{locale === "al" ? "Shtesa & Shërbime Opsionale" : "Optional Extras & Services"}</h2>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {extras.map((extra) => (
                     <button
@@ -435,7 +444,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
           {/* Right: Booking panel (sticky) */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sticky top-24">
-              <h3 className="font-bold text-navy-900 mb-4">Book This Car</h3>
+              <h3 className="font-bold text-navy-900 mb-4">{locale === "al" ? "Rezervo Këtë Makinë" : "Book This Car"}</h3>
 
               <div className="space-y-3 mb-4">
                 {/* Pickup */}
@@ -584,7 +593,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
               </button>
 
               <p className="text-xs text-gray-400 text-center mt-3">
-                {locale === "al" ? "Anulim i lirë · Nuk kërkohet kartë krediti" : "Free cancellation · No credit card needed to reserve"}
+                {locale === "al" ? "Anulim i lirë deri 48 orë para marrjes" : "Free cancellation up to 48h before pickup"}
               </p>
 
               <div className="mt-4 space-y-2">

@@ -219,7 +219,6 @@ export function SettingsClient({ grouped }: SettingsClientProps) {
                           {error}
                         </p>
                       )}
-                      <p className="text-[10px] text-gray-400 mt-1 font-mono">{item.key}</p>
                     </div>
                   );
                 })}

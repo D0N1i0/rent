@@ -29,6 +29,9 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
   const settings = await getPublicSettings();
 
+  const vatAmount = booking.vatAmount ?? 0;
+  const preTaxTotal = booking.totalAmount - vatAmount;
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="page-container max-w-2xl mx-auto">
@@ -105,11 +108,11 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
               <>
                 <div className="border-t border-gray-100 pt-2 flex justify-between text-gray-500">
                   <span>Subtotal (excl. VAT)</span>
-                  <span>{formatCurrency(booking.totalAmount - booking.vatAmount)}</span>
+                  <span>{formatCurrency(preTaxTotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
                   <span>VAT ({Math.round(booking.vatRate * 100)}%)</span>
-                  <span>{formatCurrency(booking.vatAmount)}</span>
+                  <span>{formatCurrency(vatAmount)}</span>
                 </div>
               </>
             )}
@@ -165,7 +168,10 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
         <div className="flex flex-wrap gap-3 justify-center">
           <Link href="/" className="btn-outline text-sm px-6 py-2.5">Back to Homepage</Link>
-          <Link href="/fleet" className="btn-primary text-sm px-6 py-2.5">Browse More Cars <ArrowRight className="h-4 w-4" /></Link>
+          <Link href={`/dashboard/bookings/${booking.id}`} className="btn-secondary text-sm px-6 py-2.5 flex items-center gap-2">
+            View My Booking <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/fleet" className="btn-primary text-sm px-6 py-2.5">Browse More Cars</Link>
         </div>
       </div>
     </div>

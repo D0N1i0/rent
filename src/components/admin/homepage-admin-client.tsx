@@ -266,7 +266,6 @@ export function HomepageAdminClient({ settings: init, seo: initSeo }: HomepageAd
                           className="form-input"
                         />
                       )}
-                      <p className="text-[10px] text-gray-400 mt-1 font-mono">{field.key}</p>
                     </div>
                   ))}
                 </div>

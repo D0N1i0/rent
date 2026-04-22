@@ -23,19 +23,20 @@ export function BookingActionButtons({
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Modal state for actions needing a reason
+  const [confirmModal, setConfirmModal] = useState<{
+    action: string;
+    payload: Record<string, unknown>;
+    label: string;
+    message: string;
+    buttonLabel: string;
+    buttonClass: string;
+  } | null>(null);
   const [reasonModal, setReasonModal] = useState<{
     action: string;
     payload: Record<string, unknown>;
     label: string;
     prompt: string;
     reasonKey: string;
-  } | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{
-    action: string;
-    payload: Record<string, unknown>;
-    label: string;
-    description: string;
-    tone?: "default" | "danger";
   } | null>(null);
   const [reason, setReason] = useState("");
 
@@ -61,6 +62,25 @@ export function BookingActionButtons({
     }
   };
 
+  const openConfirmModal = (
+    action: string,
+    payload: Record<string, unknown>,
+    label: string,
+    message: string,
+    buttonLabel: string,
+    buttonClass: string
+  ) => {
+    setError(null);
+    setConfirmModal({ action, payload, label, message, buttonLabel, buttonClass });
+  };
+
+  const submitConfirm = async () => {
+    if (!confirmModal) return;
+    const { payload, action } = confirmModal;
+    setConfirmModal(null);
+    await update(payload, action);
+  };
+
   const openReasonModal = (
     action: string,
     payload: Record<string, unknown>,
@@ -80,24 +100,6 @@ export function BookingActionButtons({
     await update({ ...payload, [reasonKey]: reason.trim() || undefined }, action);
   };
 
-  const openConfirmModal = (
-    action: string,
-    payload: Record<string, unknown>,
-    label: string,
-    description: string,
-    tone: "default" | "danger" = "default"
-  ) => {
-    setError(null);
-    setConfirmModal({ action, payload, label, description, tone });
-  };
-
-  const submitConfirmedAction = async () => {
-    if (!confirmModal) return;
-    const { payload, action } = confirmModal;
-    setConfirmModal(null);
-    await update(payload, action);
-  };
-
   const btn = (key: string) => loading === key;
 
   return (
@@ -113,7 +115,14 @@ export function BookingActionButtons({
         <div className="flex flex-wrap gap-2">
           {currentStatus === "PENDING" && (
             <button
-              onClick={() => openConfirmModal("confirm", { status: "CONFIRMED" }, "Confirm Booking", "This will confirm the reservation and notify the customer.")}
+              onClick={() => openConfirmModal(
+                "confirm",
+                { status: "CONFIRMED" },
+                "Confirm Booking",
+                "Are you sure you want to confirm this booking? The customer will be notified.",
+                "Confirm Booking",
+                "bg-blue-600 hover:bg-blue-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
@@ -135,7 +144,14 @@ export function BookingActionButtons({
 
           {currentStatus === "CONFIRMED" && (
             <button
-              onClick={() => openConfirmModal("pickup", { status: "IN_PROGRESS" }, "Mark Picked Up", "This starts the rental and records the actual pickup time.")}
+              onClick={() => openConfirmModal(
+                "pickup",
+                { status: "IN_PROGRESS" },
+                "Mark as Picked Up",
+                "Confirm that the customer has picked up the vehicle and the rental is now in progress.",
+                "Mark Picked Up",
+                "bg-purple-600 hover:bg-purple-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
             >
@@ -146,7 +162,14 @@ export function BookingActionButtons({
 
           {currentStatus === "IN_PROGRESS" && (
             <button
-              onClick={() => openConfirmModal("complete", { status: "COMPLETED" }, "Mark Returned", "This completes the rental and records the actual return time.")}
+              onClick={() => openConfirmModal(
+                "complete",
+                { status: "COMPLETED" },
+                "Mark as Returned",
+                "Confirm that the vehicle has been returned and the rental is complete.",
+                "Mark Returned",
+                "bg-green-600 hover:bg-green-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
@@ -157,7 +180,14 @@ export function BookingActionButtons({
 
           {currentStatus === "IN_PROGRESS" && (
             <button
-              onClick={() => openConfirmModal("noshow", { status: "NO_SHOW" }, "Mark No Show", "This marks the customer as a no-show. Use only after the pickup window has passed.", "danger")}
+              onClick={() => openConfirmModal(
+                "noshow",
+                { status: "NO_SHOW" },
+                "Mark as No Show",
+                "Confirm that the customer did not show up for their booking. This action cannot be undone.",
+                "Mark No Show",
+                "bg-gray-600 hover:bg-gray-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
@@ -179,7 +209,14 @@ export function BookingActionButtons({
 
           {currentPaymentStatus !== "PAID" && currentStatus !== "CANCELLED" && (
             <button
-              onClick={() => openConfirmModal("markpaid", { paymentStatus: "PAID" }, "Mark Payment Received", "This records the booking as paid manually. Confirm only after reconciling cash, card terminal, bank transfer, or Stripe.")}
+              onClick={() => openConfirmModal(
+                "markpaid",
+                { paymentStatus: "PAID" },
+                "Mark Payment Received",
+                "This records the booking as paid manually. Confirm only after reconciling cash, card terminal, bank transfer, or Stripe.",
+                "Mark Paid",
+                "bg-emerald-600 hover:bg-emerald-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
             >
@@ -190,7 +227,14 @@ export function BookingActionButtons({
 
           {currentPaymentStatus === "PAID" && (
             <button
-              onClick={() => openConfirmModal("refund", { paymentStatus: "REFUNDED" }, "Mark Refunded", "This records the payment as refunded manually. Confirm only after the refund has actually been issued.", "danger")}
+              onClick={() => openConfirmModal(
+                "refund",
+                { paymentStatus: "REFUNDED" },
+                "Mark Refunded",
+                "This records the payment as refunded manually. Confirm only after the refund has actually been issued.",
+                "Mark Refunded",
+                "bg-gray-600 hover:bg-gray-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
             >
@@ -201,7 +245,14 @@ export function BookingActionButtons({
 
           {currentStatus === "COMPLETED" && (
             <button
-              onClick={() => openConfirmModal("deposit", { depositReturned: true }, "Deposit Returned", "This records the security deposit as returned to the customer.")}
+              onClick={() => openConfirmModal(
+                "deposit",
+                { depositReturned: true },
+                "Deposit Returned",
+                "This records the security deposit as returned to the customer.",
+                "Deposit Returned",
+                "bg-teal-600 hover:bg-teal-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
@@ -211,6 +262,30 @@ export function BookingActionButtons({
           )}
         </div>
       </div>
+
+      {/* Simple confirmation modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-navy-900 mb-2">{confirmModal.label}</h3>
+            <p className="text-sm text-gray-600 mb-5">{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 btn-secondary py-2.5 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitConfirm}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${confirmModal.buttonClass}`}
+              >
+                {confirmModal.buttonLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reason modal */}
       {reasonModal && (
@@ -235,33 +310,6 @@ export function BookingActionButtons({
               <button
                 onClick={submitWithReason}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-navy-900 hover:bg-navy-800 transition-colors"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="font-bold text-navy-900 mb-1">{confirmModal.label}</h3>
-            <p className="text-sm text-gray-500 mb-5">{confirmModal.description}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmModal(null)}
-                className="flex-1 btn-secondary py-2.5 text-sm"
-              >
-                Back
-              </button>
-              <button
-                onClick={submitConfirmedAction}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${
-                  confirmModal.tone === "danger"
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-navy-900 hover:bg-navy-800"
-                }`}
               >
                 Confirm
               </button>
