@@ -38,6 +38,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
     checking: boolean;
     available: boolean | null;
     reason?: string;
+    error?: boolean;
   }>({ checking: false, available: null });
 
   const fuelLabels: Record<string, string> = {
@@ -138,7 +139,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
     !!booking.pickupTime &&
     !!booking.returnDate &&
     !!booking.returnTime &&
-    availability.available !== false;
+    availability.available === true;
 
   useEffect(() => {
     if (!booking.pickupDate || !booking.pickupTime || !booking.returnDate || !booking.returnTime) {
@@ -157,12 +158,19 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
 
     setAvailability({ checking: true, available: null });
     fetch(`/api/cars/availability?${params.toString()}`, { signal: controller.signal })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error ?? "Availability check failed");
+        }
+        return data;
+      })
       .then((data) => {
         setAvailability({
           checking: false,
           available: data.available === true,
           reason: data.reason,
+          error: false,
         });
       })
       .catch((err) => {
@@ -170,7 +178,10 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
           setAvailability({
             checking: false,
             available: null,
-            reason: locale === "al" ? "Nuk mund te verifikohej disponueshmeria." : "Could not verify availability.",
+            error: true,
+            reason: locale === "al"
+              ? "Disponueshmeria nuk mund te verifikohet tani. Ju lutemi provoni perseri ose kontaktoni AutoKos."
+              : "Availability could not be verified right now. Please try again or contact AutoKos.",
           });
         }
       });
@@ -578,6 +589,11 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
               {availability.available === false && (
                 <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
                   {availability.reason ?? (locale === "al" ? "Ky automjet nuk eshte i disponueshem per keto data." : "This vehicle is not available for these dates.")}
+                </div>
+              )}
+              {availability.error && (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                  {availability.reason}
                 </div>
               )}
 

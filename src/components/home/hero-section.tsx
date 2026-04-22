@@ -33,9 +33,19 @@ export function HeroSection({ locations, content, settings, activeCarCount }: He
     returnDate: threeDays.toISOString().split("T")[0],
     returnTime: "10:00",
   });
+  const [formError, setFormError] = useState<string | null>(null);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
+
+    const pickup = new Date(`${form.pickupDate}T${form.pickupTime}:00`);
+    const ret = new Date(`${form.returnDate}T${form.returnTime}:00`);
+    if (Number.isNaN(pickup.getTime()) || Number.isNaN(ret.getTime()) || ret <= pickup) {
+      setFormError(isAl ? "Data dhe ora e kthimit duhet te jene pas marrjes." : "Return date and time must be after pickup.");
+      return;
+    }
+
     const params = new URLSearchParams({
       pickupLocationId: form.pickupLocationId,
       dropoffLocationId: form.sameLocation ? form.pickupLocationId : form.dropoffLocationId,
@@ -94,6 +104,11 @@ export function HeroSection({ locations, content, settings, activeCarCount }: He
             <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8">
               <h2 className="text-xl font-bold text-navy-900 mb-6">{isAl ? "Gjej Makinën e Përshtatshme" : "Find Your Perfect Car"}</h2>
               <form onSubmit={handleSearch} className="space-y-4">
+                {formError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                    {formError}
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{isAl ? "Vendi i Marrjes" : "Pickup Location"}</label>
                   <div className="relative">

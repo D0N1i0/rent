@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
+    "db:cleanup-preview": "ts-node --project tsconfig.seed.json prisma/cleanup-preview-data.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "db:studio": "prisma studio",
     "vercel-build": "prisma generate && prisma migrate deploy && next build"
