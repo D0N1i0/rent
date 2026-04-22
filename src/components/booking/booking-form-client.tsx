@@ -11,7 +11,7 @@ import { AlertCircle, Loader2, Check, User, Car, MapPin, Calendar, ChevronRight,
 import { bookingSchema, type BookingFormValues } from "@/lib/validations/booking";
 import { formatCurrency } from "@/lib/utils";
 import { buildPriceBreakdown, buildExtraLineItems, KOSOVO_VAT_RATE } from "@/lib/pricing";
-import { buildBookingDateTimes } from "@/lib/booking-rules";
+import { buildBookingDateTimes, getDurationDays } from "@/lib/booking-rules";
 import type { Car as CarType, CarImage, CarCategory, Extra, Location } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -60,11 +60,12 @@ export function BookingFormClient({
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number; description: string } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   const pricePreview = useMemo(() => {
     const { pickupDT, returnDT } = buildBookingDateTimes({ pickupDate, pickupTime, returnDate, returnTime });
     const selectedExtraRecords = allExtras.filter((extra) => selectedExtras.includes(extra.id));
-    const extras = buildExtraLineItems(selectedExtraRecords, selectedExtras, Math.max(1, Math.ceil((returnDT.getTime() - pickupDT.getTime()) / (1000 * 60 * 60 * 24))));
+    const extras = buildExtraLineItems(selectedExtraRecords, selectedExtras, getDurationDays(pickupDT, returnDT));
     return buildPriceBreakdown(car, pickupDT, returnDT, pickupLocation, dropoffLocation, extras, couponApplied?.discount ?? 0, KOSOVO_VAT_RATE);
   }, [allExtras, car, couponApplied, dropoffLocation, pickupDate, pickupLocation, pickupTime, returnDate, returnTime, selectedExtras]);
 
@@ -473,8 +474,8 @@ export function BookingFormClient({
               {/* Car */}
               <div className="flex gap-3 mb-4 pb-4 border-b border-gray-100">
                 <div className="relative h-16 w-24 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                  {primaryImage?.url ? (
-                    <Image src={primaryImage.url} alt={car.name} fill className="object-cover" sizes="96px" />
+                  {primaryImage?.url && !imageFailed ? (
+                    <Image src={primaryImage.url} alt={car.name} fill className="object-cover" sizes="96px" onError={() => setImageFailed(true)} />
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <Car className="h-6 w-6 text-gray-300" />

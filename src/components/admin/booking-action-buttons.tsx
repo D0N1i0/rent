@@ -209,7 +209,14 @@ export function BookingActionButtons({
 
           {currentPaymentStatus !== "PAID" && currentStatus !== "CANCELLED" && (
             <button
-              onClick={() => update({ paymentStatus: "PAID" }, "markpaid")}
+              onClick={() => openConfirmModal(
+                "markpaid",
+                { paymentStatus: "PAID" },
+                "Mark Payment Received",
+                "This records the booking as paid manually. Confirm only after reconciling cash, card terminal, bank transfer, or Stripe.",
+                "Mark Paid",
+                "bg-emerald-600 hover:bg-emerald-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
             >
@@ -220,7 +227,14 @@ export function BookingActionButtons({
 
           {currentPaymentStatus === "PAID" && (
             <button
-              onClick={() => update({ paymentStatus: "REFUNDED" }, "refund")}
+              onClick={() => openConfirmModal(
+                "refund",
+                { paymentStatus: "REFUNDED" },
+                "Mark Refunded",
+                "This records the payment as refunded manually. Confirm only after the refund has actually been issued.",
+                "Mark Refunded",
+                "bg-gray-600 hover:bg-gray-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
             >
@@ -231,7 +245,14 @@ export function BookingActionButtons({
 
           {currentStatus === "COMPLETED" && (
             <button
-              onClick={() => update({ depositReturned: true }, "deposit")}
+              onClick={() => openConfirmModal(
+                "deposit",
+                { depositReturned: true },
+                "Deposit Returned",
+                "This records the security deposit as returned to the customer.",
+                "Deposit Returned",
+                "bg-teal-600 hover:bg-teal-700"
+              )}
               disabled={!!loading}
               className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
             >

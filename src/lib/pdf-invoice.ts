@@ -4,6 +4,7 @@
 // media queries. The /api/bookings/[id]/invoice endpoint returns it as
 // text/html with print styles — user can Ctrl+P / "Save as PDF".
 // No external dependencies required.
+import { BUSINESS_TIMEZONE } from "@/lib/utils";
 
 export interface InvoiceData {
   bookingRef: string;
@@ -51,6 +52,7 @@ function fmt(n: number) {
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -60,7 +62,12 @@ function fmtDate(d: Date) {
 }
 
 function fmtDateShort(d: Date) {
-  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(d));
 }
 
 export function generateInvoiceHTML(data: InvoiceData): string {

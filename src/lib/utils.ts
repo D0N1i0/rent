@@ -1,10 +1,10 @@
 // src/lib/utils.ts
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { differenceInDays, differenceInHours, parseISO } from "date-fns";
+import { differenceInDays, differenceInHours } from "date-fns";
 import { randomBytes } from "crypto";
 
-const PRISTINA_TZ = "Europe/Pristina";
+export const BUSINESS_TIMEZONE = "Europe/Pristina" as const;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,30 +18,23 @@ export function formatCurrency(amount: number, currency = "€"): string {
 }
 
 export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: PRISTINA_TZ,
-    year: "numeric",
-    month: "short",
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
     day: "numeric",
-  }).format(d);
+    month: "short",
+    year: "numeric",
+  }).format(new Date(date));
 }
 
 export function formatDateTime(date: Date | string): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
-  const datePart = new Intl.DateTimeFormat("en-US", {
-    timeZone: PRISTINA_TZ,
-    year: "numeric",
-    month: "short",
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
     day: "numeric",
-  }).format(d);
-  const timePart = new Intl.DateTimeFormat("en-US", {
-    timeZone: PRISTINA_TZ,
+    month: "short",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
-  }).format(d);
-  return `${datePart} at ${timePart}`;
+  }).format(new Date(date));
 }
 
 export function calculateRentalDays(pickupDT: Date, returnDT: Date): number {

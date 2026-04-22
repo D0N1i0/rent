@@ -1,7 +1,7 @@
 // src/components/cars/car-detail-client.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import {
   Star, CheckCircle2
 } from "lucide-react";
 import { formatCurrency, calculateRentalDays } from "@/lib/utils";
+import { KOSOVO_VAT_RATE } from "@/lib/pricing";
 import { CarCard } from "./car-card";
 import type { Car, CarImage, CarCategory, Extra, Location } from "@prisma/client";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,11 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
   const [imgIdx, setImgIdx] = useState(0);
   const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [availability, setAvailability] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    reason?: string;
+  }>({ checking: false, available: null });
 
   const fuelLabels: Record<string, string> = {
     PETROL: locale === "al" ? "Benzinë" : "Petrol",
@@ -123,8 +129,54 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
   const pickupFee = pickupLoc?.pickupFee ?? 0;
   const dropoffFee = dropoffLoc?.dropoffFee ?? 0;
   const preTaxTotal = subtotal + extrasTotal + pickupFee + (booking.sameLocation ? 0 : dropoffFee);
-  const vatAmount = preTaxTotal * 0.18;
-  const total = preTaxTotal + vatAmount;
+  const vatAmount = Number((preTaxTotal * KOSOVO_VAT_RATE).toFixed(2));
+  const total = Number((preTaxTotal + vatAmount).toFixed(2));
+  const canRequestBooking =
+    !!booking.pickupLocationId &&
+    !!(booking.sameLocation ? booking.pickupLocationId : booking.dropoffLocationId) &&
+    !!booking.pickupDate &&
+    !!booking.pickupTime &&
+    !!booking.returnDate &&
+    !!booking.returnTime &&
+    availability.available !== false;
+
+  useEffect(() => {
+    if (!booking.pickupDate || !booking.pickupTime || !booking.returnDate || !booking.returnTime) {
+      setAvailability({ checking: false, available: null });
+      return;
+    }
+
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      carId: car.id,
+      pickupDate: booking.pickupDate,
+      pickupTime: booking.pickupTime,
+      returnDate: booking.returnDate,
+      returnTime: booking.returnTime,
+    });
+
+    setAvailability({ checking: true, available: null });
+    fetch(`/api/cars/availability?${params.toString()}`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        setAvailability({
+          checking: false,
+          available: data.available === true,
+          reason: data.reason,
+        });
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          setAvailability({
+            checking: false,
+            available: null,
+            reason: locale === "al" ? "Nuk mund te verifikohej disponueshmeria." : "Could not verify availability.",
+          });
+        }
+      });
+
+    return () => controller.abort();
+  }, [booking.pickupDate, booking.pickupTime, booking.returnDate, booking.returnTime, car.id, locale]);
 
   const toggleExtra = (id: string) => {
     setSelectedExtras(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
@@ -499,13 +551,13 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                       <span>{formatCurrency(dropoffFee)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-gray-500 text-xs">
-                    <span>{locale === "al" ? "Nëntotali (pa TVSH)" : "Subtotal (excl. VAT)"}</span>
+                  <div className="border-t border-gray-200 pt-2 flex justify-between text-gray-600">
+                    <span>{locale === "al" ? "Nentotali (pa TVSH)" : "Subtotal (excl. VAT)"}</span>
                     <span>{formatCurrency(preTaxTotal)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-500 text-xs">
-                    <span>VAT 18%</span>
-                    <span>+{formatCurrency(vatAmount)}</span>
+                  <div className="flex justify-between text-gray-500">
+                    <span>{locale === "al" ? "TVSH (18%)" : "VAT (18%)"}</span>
+                    <span>{formatCurrency(vatAmount)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-navy-900">
                     <span>{locale === "al" ? "Totali (me TVSH)" : "Total (incl. VAT)"}</span>
@@ -518,13 +570,26 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                 </div>
               )}
 
+              {availability.checking && (
+                <p className="text-xs text-gray-500 text-center mb-3">
+                  {locale === "al" ? "Duke kontrolluar disponueshmerine..." : "Checking availability..."}
+                </p>
+              )}
+              {availability.available === false && (
+                <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                  {availability.reason ?? (locale === "al" ? "Ky automjet nuk eshte i disponueshem per keto data." : "This vehicle is not available for these dates.")}
+                </div>
+              )}
+
               {/* On mobile, the sticky bottom bar is the primary CTA — only show here on desktop */}
               <button
                 onClick={handleBookNow}
-                disabled={!booking.pickupLocationId || !booking.pickupDate || !booking.returnDate}
+                disabled={!canRequestBooking || availability.checking}
                 className="hidden lg:flex btn-primary w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {locale === "al" ? "Rezervo Tani" : "Reserve Now"} <ArrowRight className="h-5 w-5" />
+                {availability.checking
+                  ? locale === "al" ? "Duke kontrolluar..." : "Checking..."
+                  : locale === "al" ? "Rezervo Tani" : "Reserve Now"} <ArrowRight className="h-5 w-5" />
               </button>
 
               <p className="text-xs text-gray-400 text-center mt-3">
@@ -556,10 +621,12 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
         </div>
         <button
           onClick={handleBookNow}
-          disabled={!booking.pickupLocationId || !booking.pickupDate || !booking.returnDate}
+          disabled={!canRequestBooking || availability.checking}
           className="btn-primary py-3 px-6 text-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
-          {locale === "al" ? "Rezervo Tani" : "Reserve Now"} <ArrowRight className="h-4 w-4" />
+          {availability.checking
+            ? locale === "al" ? "Kontroll..." : "Checking..."
+            : locale === "al" ? "Rezervo Tani" : "Reserve Now"} <ArrowRight className="h-4 w-4" />
         </button>
       </div>
 

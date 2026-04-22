@@ -83,6 +83,7 @@ export function BookingDetailClient({
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   const stripeEnabled = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   const canPayOnline =
@@ -191,12 +192,13 @@ export function BookingDetailClient({
           </div>
           <div className="flex items-center gap-4">
             <div className="h-20 w-28 bg-gray-100 rounded-xl overflow-hidden shrink-0">
-              {booking.car.images[0]?.url ? (
+              {booking.car.images[0]?.url && !imageFailed ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={booking.car.images[0].url}
                   alt={booking.car.name}
                   className="w-full h-full object-cover"
+                  onError={() => setImageFailed(true)}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">

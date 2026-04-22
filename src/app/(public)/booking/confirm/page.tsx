@@ -29,11 +29,8 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
   const settings = await getPublicSettings();
 
-  // VAT breakdown (Kosovo 18%)
-  const VAT_RATE = 0.18;
-  const preTaxTotal = booking.subtotal + booking.extrasTotal + booking.pickupFee + booking.dropoffFee;
-  const vatAmount = preTaxTotal * VAT_RATE;
-  const totalIncVat = preTaxTotal + vatAmount;
+  const vatAmount = booking.vatAmount ?? 0;
+  const preTaxTotal = booking.totalAmount - vatAmount;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -107,17 +104,21 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
-            <div className="flex justify-between text-gray-600 border-t border-gray-200 pt-2">
-              <span>Subtotal (excl. VAT)</span>
-              <span>{formatCurrency(preTaxTotal)}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>VAT (18%)</span>
-              <span>+{formatCurrency(vatAmount)}</span>
-            </div>
+            {booking.vatAmount > 0 && (
+              <>
+                <div className="border-t border-gray-100 pt-2 flex justify-between text-gray-500">
+                  <span>Subtotal (excl. VAT)</span>
+                  <span>{formatCurrency(preTaxTotal)}</span>
+                </div>
+                <div className="flex justify-between text-gray-500">
+                  <span>VAT ({Math.round(booking.vatRate * 100)}%)</span>
+                  <span>{formatCurrency(vatAmount)}</span>
+                </div>
+              </>
+            )}
             <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-navy-900">
               <span>Total (incl. VAT)</span>
-              <span className="text-crimson-600">{formatCurrency(totalIncVat)}</span>
+              <span className="text-crimson-600">{formatCurrency(booking.totalAmount)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-400">
               <span>Security deposit (pre-authorised at pickup)</span>
