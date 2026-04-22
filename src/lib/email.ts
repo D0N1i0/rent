@@ -6,6 +6,7 @@
 
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
+import { BUSINESS_TIMEZONE } from "@/lib/utils";
 
 // ─── Transport ────────────────────────────────────────────────────────────────
 
@@ -187,6 +188,7 @@ export async function sendBookingConfirmationEmail(
   const biz = await getEmailBizInfo();
 
   const pickupStr = booking.pickupDateTime.toLocaleString("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
     weekday: "short",
     year: "numeric",
     month: "short",
@@ -195,6 +197,7 @@ export async function sendBookingConfirmationEmail(
     minute: "2-digit",
   });
   const returnStr = booking.dropoffDateTime.toLocaleString("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
     weekday: "short",
     year: "numeric",
     month: "short",

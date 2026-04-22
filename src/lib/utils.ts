@@ -1,8 +1,10 @@
 // src/lib/utils.ts
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { differenceInDays, differenceInHours, format, parseISO } from "date-fns";
+import { differenceInDays, differenceInHours } from "date-fns";
 import { randomBytes } from "crypto";
+
+export const BUSINESS_TIMEZONE = "Europe/Belgrade" as const;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,13 +18,23 @@ export function formatCurrency(amount: number, currency = "€"): string {
 }
 
 export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
-  return format(d, "MMM d, yyyy");
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(date));
 }
 
 export function formatDateTime(date: Date | string): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
-  return format(d, "MMM d, yyyy 'at' HH:mm");
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
 }
 
 export function calculateRentalDays(pickupDT: Date, returnDT: Date): number {

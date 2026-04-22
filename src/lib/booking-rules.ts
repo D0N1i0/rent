@@ -1,6 +1,6 @@
 import { addHours } from "date-fns";
 import type { Offer, Prisma, SeasonalPricing } from "@prisma/client";
-import { calculateRentalDays } from "@/lib/utils";
+import { BUSINESS_TIMEZONE, calculateRentalDays } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 export const BOOKING_RULES = {
@@ -50,8 +50,6 @@ export function bookingConflictStatusFilter(now: Date = new Date()): Prisma.Book
  * in summer. All customer-facing pickup/return times are wall-clock times
  * in this zone, regardless of where the server runs.
  */
-export const BUSINESS_TIMEZONE = "Europe/Belgrade" as const;
-
 /**
  * Convert a Kosovo wall-clock date+time string into the correct UTC instant.
  *

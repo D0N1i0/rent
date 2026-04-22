@@ -101,8 +101,20 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
+            {booking.vatAmount > 0 && (
+              <>
+                <div className="border-t border-gray-100 pt-2 flex justify-between text-gray-500">
+                  <span>Subtotal (excl. VAT)</span>
+                  <span>{formatCurrency(booking.totalAmount - booking.vatAmount)}</span>
+                </div>
+                <div className="flex justify-between text-gray-500">
+                  <span>VAT ({Math.round(booking.vatRate * 100)}%)</span>
+                  <span>{formatCurrency(booking.vatAmount)}</span>
+                </div>
+              </>
+            )}
             <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-navy-900">
-              <span>Total</span>
+              <span>Total (incl. VAT)</span>
               <span className="text-crimson-600">{formatCurrency(booking.totalAmount)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-400">
