@@ -256,6 +256,7 @@ model SeasonalPricing {
   isActive     Boolean  @default(true)
 
   @@index([carId])
+  @@index([carId, isActive, startDate, endDate])
   @@map("seasonal_pricing")
 }
 
@@ -269,6 +270,7 @@ model AvailabilityBlock {
   createdAt DateTime @default(now())
 
   @@index([carId])
+  @@index([carId, startDate, endDate])
   @@map("availability_blocks")
 }
 
@@ -396,6 +398,7 @@ model Booking {
   statusHistory     BookingStatusHistory[]
 
   @@index([userId])
+  @@index([userId, createdAt])
   @@index([carId])
   @@index([status])
   @@index([pickupDateTime])
@@ -405,6 +408,7 @@ model Booking {
   // the datetime range. With a per-column-only setup Postgres must bitmap
   // the two indexes; a compound index lets it scan one BTree.
   @@index([carId, status, pickupDateTime])
+  @@index([carId, status, dropoffDateTime])
   @@index([status, createdAt])
   @@map("bookings")
 }
@@ -496,6 +500,7 @@ model Offer {
   sortOrder       Int       @default(0)
   createdAt       DateTime  @default(now())
 
+  @@index([isActive, validFrom, validUntil])
   @@map("offers")
 }
 
