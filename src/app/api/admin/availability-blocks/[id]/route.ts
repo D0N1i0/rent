@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { bookingConflictStatusFilter } from "@/lib/booking-rules";
 
 async function ensureAdmin() {
   const session = await auth();
@@ -34,12 +35,53 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
+  const startDate = new Date(parsed.data.startDate);
+  const endDate = new Date(parsed.data.endDate);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+    return NextResponse.json({ error: "Invalid availability date range" }, { status: 400 });
+  }
+
+  const car = await prisma.car.findUnique({
+    where: { id: parsed.data.carId },
+    select: { id: true },
+  });
+  if (!car) return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+
+  const [existingBlock, bookingConflict] = await Promise.all([
+    prisma.availabilityBlock.findFirst({
+      where: {
+        id: { not: id },
+        carId: parsed.data.carId,
+        AND: [{ startDate: { lt: endDate } }, { endDate: { gt: startDate } }],
+      },
+      select: { id: true },
+    }),
+    prisma.booking.findFirst({
+      where: {
+        carId: parsed.data.carId,
+        ...bookingConflictStatusFilter(),
+        AND: [{ pickupDateTime: { lt: endDate } }, { dropoffDateTime: { gt: startDate } }],
+      },
+      select: { bookingRef: true },
+    }),
+  ]);
+
+  if (existingBlock) {
+    return NextResponse.json({ error: "This vehicle already has an availability block in that period" }, { status: 409 });
+  }
+  if (bookingConflict) {
+    return NextResponse.json(
+      { error: `This block overlaps booking ${bookingConflict.bookingRef}. Cancel or move the booking before blocking the vehicle.` },
+      { status: 409 }
+    );
+  }
+
   const item = await prisma.availabilityBlock.update({
     where: { id },
     data: {
       carId: parsed.data.carId,
-      startDate: new Date(parsed.data.startDate),
-      endDate: new Date(parsed.data.endDate),
+      startDate,
+      endDate,
       reason: parsed.data.reason ?? null,
     },
   });

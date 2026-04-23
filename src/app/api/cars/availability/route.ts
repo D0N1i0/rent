@@ -1,8 +1,7 @@
 // src/app/api/cars/availability/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkDateOverlap } from "@/lib/utils";
-import { bookingConflictStatusFilter, kosovoWallTimeToUtc } from "@/lib/booking-rules";
+import { bookingConflictStatusFilter, kosovoWallTimeToUtc, validateBookingWindow } from "@/lib/booking-rules";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -22,32 +21,46 @@ export async function GET(req: NextRequest) {
     const pickupDT = kosovoWallTimeToUtc(pickupDate, pickupTime);
     const returnDT = kosovoWallTimeToUtc(returnDate, returnTime);
 
-    if (returnDT <= pickupDT) {
-      return NextResponse.json({ available: false, reason: "Return must be after pickup" });
+    const windowError = validateBookingWindow(pickupDT, returnDT);
+    if (windowError) {
+      return NextResponse.json({ available: false, reason: windowError });
     }
 
-    // Check existing bookings
-    const existingBookings = await prisma.booking.findMany({
-      where: {
-        carId,
-        ...bookingConflictStatusFilter(),
-        ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
-      },
-      select: { pickupDateTime: true, dropoffDateTime: true },
+    const car = await prisma.car.findFirst({
+      where: { id: carId, isActive: true },
+      select: { id: true },
     });
-
-    for (const booking of existingBookings) {
-      if (checkDateOverlap(booking.pickupDateTime, booking.dropoffDateTime, pickupDT, returnDT)) {
-        return NextResponse.json({ available: false, reason: "Car is already booked for these dates" });
-      }
+    if (!car) {
+      return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
     }
 
-    // Check maintenance blocks
-    const blocks = await prisma.availabilityBlock.findMany({ where: { carId } });
-    for (const block of blocks) {
-      if (checkDateOverlap(block.startDate, block.endDate, pickupDT, returnDT)) {
-        return NextResponse.json({ available: false, reason: block.reason ?? "Car unavailable during this period" });
-      }
+    // Keep these queries range-filtered. Fetching every historical booking/block
+    // for a popular car makes availability checks slower as the business grows.
+    const [existingBooking, block] = await Promise.all([
+      prisma.booking.findFirst({
+        where: {
+          carId,
+          ...bookingConflictStatusFilter(),
+          ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+          AND: [{ pickupDateTime: { lt: returnDT } }, { dropoffDateTime: { gt: pickupDT } }],
+        },
+        select: { id: true },
+      }),
+      prisma.availabilityBlock.findFirst({
+        where: {
+          carId,
+          AND: [{ startDate: { lt: returnDT } }, { endDate: { gt: pickupDT } }],
+        },
+        select: { reason: true },
+      }),
+    ]);
+
+    if (existingBooking) {
+      return NextResponse.json({ available: false, reason: "Car is already booked for these dates" });
+    }
+
+    if (block) {
+      return NextResponse.json({ available: false, reason: block.reason ?? "Car unavailable during this period" });
     }
 
     return NextResponse.json({ available: true });

@@ -34,8 +34,10 @@ export async function POST(req: NextRequest) {
 
     if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-    // Ownership check: logged-in user must own it, or it must be a guest booking (no userId)
-    if (session?.user && booking.userId && booking.userId !== session.user.id) {
+    // Ownership check:
+    // - user-owned bookings require that exact authenticated user
+    // - guest bookings can still be paid from the confirmation link
+    if (booking.userId && (!session?.user || booking.userId !== session.user.id)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -52,7 +54,11 @@ export async function POST(req: NextRequest) {
       // Verify the intent is still valid
       try {
         const existing = await stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
-        if (existing.status === "requires_payment_method" || existing.status === "requires_confirmation") {
+        if (
+          existing.amount === eurosToCents(booking.totalAmount) &&
+          existing.currency === "eur" &&
+          (existing.status === "requires_payment_method" || existing.status === "requires_confirmation")
+        ) {
           return NextResponse.json({ clientSecret: booking.stripeClientSecret });
         }
         if (existing.status === "succeeded") {

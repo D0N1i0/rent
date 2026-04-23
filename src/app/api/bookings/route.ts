@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data;
-    const selectedExtraIds: string[] = body.selectedExtras ?? [];
+    const selectedExtraIds = Array.from(new Set(data.selectedExtras));
 
     // Opportunistic cleanup of abandoned PENDING holds (rate-limited internally).
     // Non-blocking: if cleanup fails we still proceed with the booking.
@@ -117,10 +117,14 @@ export async function POST(req: NextRequest) {
       extraLineItems = buildExtraLineItems(extraRecords, selectedExtraIds, tempDuration);
     }
 
+    const normalizedCouponCode = typeof body.couponCode === "string"
+      ? body.couponCode.trim().toUpperCase().slice(0, 50)
+      : "";
+
     let couponDiscount = 0;
-    if (body.couponCode) {
+    if (normalizedCouponCode) {
       const offer = await prisma.offer.findFirst({
-        where: { code: String(body.couponCode).trim().toUpperCase() },
+        where: { code: normalizedCouponCode },
       });
       if (offer) {
         const provisional = buildPriceBreakdown(car, pickupDT, returnDT, pickupLoc, dropoffLoc, extraLineItems);
@@ -205,7 +209,7 @@ export async function POST(req: NextRequest) {
               discount: breakdown.discount,
               vatRate: breakdown.vatRate,
               vatAmount: breakdown.vatAmount,
-              couponCode: body.couponCode ? String(body.couponCode).trim().toUpperCase() : null,
+              couponCode: normalizedCouponCode || null,
               depositAmount: car.deposit,
               totalAmount: breakdown.totalAmount,
               specialRequests: data.specialRequests?.trim() || null,
