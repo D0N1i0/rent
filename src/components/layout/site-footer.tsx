@@ -20,6 +20,7 @@ interface SiteFooterProps {
     facebookUrl: string;
     instagramUrl: string;
     youtubeUrl: string;
+    businessNipt?: string;
   };
   categories?: CarCategoryItem[];
 }
@@ -96,7 +97,10 @@ export function SiteFooter({ settings, categories }: SiteFooterProps) {
       </div>
       <div className="border-t border-white/10">
         <div className="page-container py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
-          <p>© {currentYear} {settings.businessName}. {t.footer.allRightsReserved}</p>
+          <p>
+            © {currentYear} {settings.businessName}. {t.footer.allRightsReserved}
+            {settings.businessNipt && <span className="ml-2 text-gray-600">NIPT: {settings.businessNipt}</span>}
+          </p>
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link href="/terms" className="hover:text-gray-300 transition-colors">{t.footer.terms}</Link>
             <Link href="/privacy" className="hover:text-gray-300 transition-colors">{t.footer.privacy}</Link>

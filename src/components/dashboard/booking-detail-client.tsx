@@ -133,8 +133,8 @@ export function BookingDetailClient({
     totalInclVat: locale === "al" ? "Totali (me TVSH)" : "Total (incl. VAT)",
     securityDeposit:
       locale === "al"
-        ? "Depozita e sigurisë (para-autorizim në marrje)"
-        : "Security deposit (pre-auth at pickup)",
+        ? "Depozita e sigurisë (e kërkuar në marrje)"
+        : "Security deposit (required at pickup)",
     bookingTimeline: locale === "al" ? "Kronologjia e Rezervimit" : "Booking Timeline",
     specialRequests: locale === "al" ? "Kërkesat Tuaja Speciale" : "Your Special Requests",
     cancellation: locale === "al" ? "Anulimi" : "Cancellation",

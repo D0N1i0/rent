@@ -40,7 +40,7 @@ export default async function DashboardPage() {
   return (
     <DashboardOverviewClient
       user={user}
-      bookings={bookings}
+      bookings={bookings as unknown as { id: string; bookingRef: string; status: string; totalAmount: number; durationDays: number; pickupDateTime: Date; car: { name: string; brand: string }; pickupLocation: { name: string } }[]}
       total={total}
       active={active}
       completed={completed}

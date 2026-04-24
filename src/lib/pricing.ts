@@ -6,6 +6,7 @@
 import type { Car, Extra, Location, SeasonalPricing } from "@prisma/client";
 import { ExtraPricingType } from "@prisma/client";
 import { getDurationDays, getSeasonalRate } from "@/lib/booking-rules";
+import { toNumber } from "@/lib/money";
 
 // Kosovo VAT rate – 18%
 export const KOSOVO_VAT_RATE = 0.18;
@@ -42,26 +43,31 @@ export function resolveEffectivePricePerDay(
   car: Pick<Car, "pricePerDay" | "pricePerWeek" | "pricePerMonth">,
   durationDays: number
 ): { pricePerDay: number; tier: "daily" | "weekly" | "monthly" } {
-  if (durationDays >= 30 && car.pricePerMonth) {
-    return { pricePerDay: car.pricePerMonth / 30, tier: "monthly" };
+  const pricePerDay = toNumber(car.pricePerDay);
+  const pricePerWeek = toNumber(car.pricePerWeek);
+  const pricePerMonth = toNumber(car.pricePerMonth);
+
+  if (durationDays >= 30 && pricePerMonth) {
+    return { pricePerDay: pricePerMonth / 30, tier: "monthly" };
   }
-  if (durationDays >= 7 && car.pricePerWeek) {
-    return { pricePerDay: car.pricePerWeek / 7, tier: "weekly" };
+  if (durationDays >= 7 && pricePerWeek) {
+    return { pricePerDay: pricePerWeek / 7, tier: "weekly" };
   }
-  return { pricePerDay: car.pricePerDay, tier: "daily" };
+  return { pricePerDay, tier: "daily" };
 }
 
 /**
  * Calculate a single extra's total cost given the rental duration.
  */
 export function calculateExtraTotal(extra: Pick<Extra, "price" | "pricingType">, durationDays: number): number {
+  const price = toNumber(extra.price);
   switch (extra.pricingType) {
     case "PER_DAY":
-      return extra.price * durationDays;
+      return price * durationDays;
     case "ONE_TIME":
     case "PER_BOOKING":
     default:
-      return extra.price;
+      return price;
   }
 }
 
@@ -69,7 +75,9 @@ export function calculateExtraTotal(extra: Pick<Extra, "price" | "pricingType">,
  * Build the full price breakdown for a booking, including 18% Kosovo VAT.
  */
 export function buildPriceBreakdown(
-  car: Pick<Car, "pricePerDay" | "pricePerWeek" | "pricePerMonth" | "deposit"> & { seasonalPricing?: Pick<SeasonalPricing, "startDate" | "endDate" | "pricePerDay" | "pricePerWeek" | "isActive">[] },
+  car: Pick<Car, "pricePerDay" | "pricePerWeek" | "pricePerMonth" | "deposit"> & {
+    seasonalPricing?: Pick<SeasonalPricing, "startDate" | "endDate" | "pricePerDay" | "pricePerWeek" | "isActive">[];
+  },
   pickupDT: Date,
   returnDT: Date,
   pickupLoc: Pick<Location, "id" | "pickupFee">,
@@ -82,19 +90,23 @@ export function buildPriceBreakdown(
   const seasonalRule = getSeasonalRate(car.seasonalPricing, pickupDT, returnDT);
   const seasonalResult = seasonalRule
     ? {
-        pricePerDay: durationDays >= 7 && seasonalRule.pricePerWeek ? seasonalRule.pricePerWeek / 7 : seasonalRule.pricePerDay,
+        pricePerDay:
+          durationDays >= 7 && seasonalRule.pricePerWeek
+            ? toNumber(seasonalRule.pricePerWeek) / 7
+            : toNumber(seasonalRule.pricePerDay),
         tier: "seasonal" as const,
       }
     : null;
   const { pricePerDay, tier } = seasonalResult ?? resolveEffectivePricePerDay(car, durationDays);
 
+  const pickupFeeNum = toNumber(pickupLoc.pickupFee);
+  const dropoffFeeNum = pickupLoc.id !== dropoffLoc.id ? toNumber(dropoffLoc.dropoffFee) : 0;
+
   const subtotal = parseFloat((pricePerDay * durationDays).toFixed(2));
   const extrasTotal = parseFloat(extras.reduce((sum, e) => sum + e.total, 0).toFixed(2));
-  const pickupFee = pickupLoc.pickupFee;
-  const dropoffFee = pickupLoc.id !== dropoffLoc.id ? dropoffLoc.dropoffFee : 0;
   const discount = parseFloat(couponDiscount.toFixed(2));
   const preTaxTotal = parseFloat(
-    Math.max(0, subtotal + extrasTotal + pickupFee + dropoffFee - discount).toFixed(2)
+    Math.max(0, subtotal + extrasTotal + pickupFeeNum + dropoffFeeNum - discount).toFixed(2)
   );
   const vatAmount = parseFloat((preTaxTotal * vatRate).toFixed(2));
   const totalAmount = parseFloat((preTaxTotal + vatAmount).toFixed(2));
@@ -104,8 +116,8 @@ export function buildPriceBreakdown(
     pricePerDay,
     subtotal,
     extrasTotal,
-    pickupFee,
-    dropoffFee,
+    pickupFee: pickupFeeNum,
+    dropoffFee: dropoffFeeNum,
     discount,
     preTaxTotal,
     vatRate,
@@ -126,7 +138,7 @@ export function buildExtraLineItems(
   return extraRecords.map((extra) => ({
     extraId: extra.id,
     name: extra.name,
-    price: extra.price,
+    price: toNumber(extra.price),
     pricingType: extra.pricingType,
     quantity: 1,
     total: calculateExtraTotal(extra, durationDays),

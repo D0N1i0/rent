@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
     if (offer.validUntil && now > offer.validUntil) {
       return NextResponse.json({ valid: false, error: `This coupon expired on ${offer.validUntil.toLocaleDateString("en-GB")}` });
     }
-    if (offer.minSubtotal != null && subtotal < offer.minSubtotal) {
+    if (offer.minSubtotal != null && subtotal < Number(offer.minSubtotal)) {
       return NextResponse.json({
         valid: false,
-        error: `Minimum booking subtotal of €${offer.minSubtotal.toFixed(2)} required (your subtotal: €${subtotal.toFixed(2)})`,
+        error: `Minimum booking subtotal of €${Number(offer.minSubtotal).toFixed(2)} required (your subtotal: €${subtotal.toFixed(2)})`,
       });
     }
     if (offer.minRentalDays != null && durationDays < offer.minRentalDays) {
@@ -77,11 +77,11 @@ export async function POST(req: NextRequest) {
 
     const description =
       offer.discountPct && offer.discountAmt
-        ? `${offer.discountPct}% + €${offer.discountAmt.toFixed(2)} off`
+        ? `${offer.discountPct}% + €${Number(offer.discountAmt).toFixed(2)} off`
         : offer.discountPct
         ? `${offer.discountPct}% off`
         : offer.discountAmt
-        ? `€${offer.discountAmt.toFixed(2)} off`
+        ? `€${Number(offer.discountAmt).toFixed(2)} off`
         : "Discount applied";
 
     return NextResponse.json({

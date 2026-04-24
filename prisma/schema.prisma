@@ -197,7 +197,7 @@ model Car {
   hasUSB            Boolean          @default(false)
   hasChildSeat      Boolean          @default(false)
   mileageLimit      Int?             // km per day, null = unlimited
-  extraKmFee        Float?
+  extraKmFee        Decimal?         @db.Decimal(10, 2)
   fuelPolicy        String?          @default("Full to Full")
   minAge            Int              @default(21)
   licenseYears      Int              @default(1)
@@ -205,10 +205,10 @@ model Car {
   shortDescription  String?
   features          String[]
   // Pricing
-  pricePerDay       Float
-  pricePerWeek      Float?
-  pricePerMonth     Float?
-  deposit           Float            @default(200)
+  pricePerDay       Decimal          @db.Decimal(10, 2)
+  pricePerWeek      Decimal?         @db.Decimal(10, 2)
+  pricePerMonth     Decimal?         @db.Decimal(10, 2)
+  deposit           Decimal          @default(200) @db.Decimal(10, 2)
   // Status
   isActive          Boolean          @default(true)
   isFeatured        Boolean          @default(false)
@@ -251,8 +251,8 @@ model SeasonalPricing {
   name         String
   startDate    DateTime
   endDate      DateTime
-  pricePerDay  Float
-  pricePerWeek Float?
+  pricePerDay  Decimal  @db.Decimal(10, 2)
+  pricePerWeek Decimal? @db.Decimal(10, 2)
   isActive     Boolean  @default(true)
 
   @@index([carId])
@@ -283,8 +283,8 @@ model Location {
   address        String?
   city           String
   isAirport      Boolean  @default(false)
-  pickupFee      Float    @default(0)
-  dropoffFee     Float    @default(0)
+  pickupFee      Decimal  @default(0) @db.Decimal(10, 2)
+  dropoffFee     Decimal  @default(0) @db.Decimal(10, 2)
   isPickupPoint  Boolean  @default(true)
   isDropoffPoint Boolean  @default(true)
   isActive       Boolean  @default(true)
@@ -306,7 +306,7 @@ model Extra {
   description String?
   iconUrl     String?
   pricingType ExtraPricingType @default(PER_DAY)
-  price       Float
+  price       Decimal          @db.Decimal(10, 2)
   isActive    Boolean          @default(true)
   sortOrder   Int              @default(0)
 
@@ -342,18 +342,18 @@ model Booking {
   guestNationality  String?
 
   // Pricing snapshot (locked at booking time)
-  basePricePerDay   Float
+  basePricePerDay   Decimal       @db.Decimal(10, 2)
   pricingTier       String        @default("daily") // daily | weekly | monthly | seasonal
-  subtotal          Float
-  extrasTotal       Float         @default(0)
-  pickupFee         Float         @default(0)
-  dropoffFee        Float         @default(0)
-  discount          Float         @default(0)
-  vatRate           Float         @default(0)    // e.g. 0.18 for 18% Kosovo VAT
-  vatAmount         Float         @default(0)    // VAT amount snapshot
-  cancellationFee   Float         @default(0)    // fee applied on cancellation
-  depositAmount     Float
-  totalAmount       Float         // total including VAT
+  subtotal          Decimal       @db.Decimal(10, 2)
+  extrasTotal       Decimal       @default(0) @db.Decimal(10, 2)
+  pickupFee         Decimal       @default(0) @db.Decimal(10, 2)
+  dropoffFee        Decimal       @default(0) @db.Decimal(10, 2)
+  discount          Decimal       @default(0) @db.Decimal(10, 2)
+  vatRate           Decimal       @default(0) @db.Decimal(5, 4)  // e.g. 0.1800 for 18% Kosovo VAT
+  vatAmount         Decimal       @default(0) @db.Decimal(10, 2) // VAT amount snapshot
+  cancellationFee   Decimal       @default(0) @db.Decimal(10, 2) // fee applied on cancellation
+  depositAmount     Decimal       @db.Decimal(10, 2)
+  totalAmount       Decimal       @db.Decimal(10, 2)             // total including VAT
 
   // Document uploads (licence/ID submitted during booking)
   documentLicenseUrl String?
@@ -435,10 +435,10 @@ model BookingExtra {
   extraId     String
   extra       Extra   @relation(fields: [extraId], references: [id])
   name        String  // snapshot
-  price       Float   // snapshot
+  price       Decimal @db.Decimal(10, 2) // snapshot
   pricingType ExtraPricingType
   quantity    Int     @default(1)
-  total       Float
+  total       Decimal @db.Decimal(10, 2)
 
   @@map("booking_extras")
 }
@@ -489,12 +489,12 @@ model Offer {
   title           String
   description     String?
   code            String?   @unique
-  discountPct     Float?
-  discountAmt     Float?
+  discountPct     Decimal?  @db.Decimal(5, 2)
+  discountAmt     Decimal?  @db.Decimal(10, 2)
   imageUrl        String?
   validFrom       DateTime?
   validUntil      DateTime?
-  minSubtotal     Float?    // minimum booking subtotal (before discount) required
+  minSubtotal     Decimal?  @db.Decimal(10, 2) // minimum booking subtotal (before discount) required
   minRentalDays   Int?      // minimum rental duration in days required
   isActive        Boolean   @default(true)
   sortOrder       Int       @default(0)

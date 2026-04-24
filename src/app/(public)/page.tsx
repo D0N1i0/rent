@@ -57,10 +57,53 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings, activeCarCount } = await getHomeData();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CarRental",
+        "@id": `${process.env.NEXT_PUBLIC_APP_URL ?? "https://autokos.com"}/#organization`,
+        name: settings.businessName,
+        description: settings.businessDescription,
+        url: process.env.NEXT_PUBLIC_APP_URL ?? "https://autokos.com",
+        telephone: settings.phone,
+        email: settings.supportEmail,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Rr. Nënë Tereza, Nr. 45",
+          addressLocality: "Prishtinë",
+          postalCode: "10000",
+          addressCountry: "XK",
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: 42.6629,
+          longitude: 21.1655,
+        },
+        openingHours: "Mo-Su 08:00-20:00",
+        priceRange: "€€",
+        currenciesAccepted: "EUR",
+        paymentAccepted: "Cash, Credit Card",
+        areaServed: {
+          "@type": "Country",
+          name: "Kosovo",
+        },
+        sameAs: [
+          settings.facebookUrl,
+          settings.instagramUrl,
+        ].filter(Boolean),
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <HeroSection locations={locations} content={homepageContent} settings={settings} activeCarCount={activeCarCount} />
-      <FeaturedCars cars={featuredCars} content={homepageContent} />
+      <FeaturedCars cars={featuredCars as unknown as import("@/components/cars/car-card").CarCardData[]} content={homepageContent} />
       <WhyChooseUs content={homepageContent} />
       <HowItWorks content={homepageContent} />
       {offers.length > 0 && <OffersSection offers={offers} content={homepageContent} />}

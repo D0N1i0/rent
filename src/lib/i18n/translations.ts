@@ -87,7 +87,7 @@ export const translations = {
       discount: "Discount",
       total: "Total",
       deposit: "Security Deposit",
-      depositNote: "Pre-authorised at pickup, not charged",
+      depositNote: "Required at vehicle pickup — handled via card hold on-site",
       confirmBooking: "Confirm Booking",
       processing: "Processing...",
       saveProfile: "Save details for future bookings",
@@ -310,7 +310,7 @@ export const translations = {
       vatRate: "VAT (18%)",
       subtotalExclVat: "Subtotal (excl. VAT)",
       totalInclVat: "Total (incl. VAT)",
-      depositPreAuth: "Security deposit (pre-authorised at pickup)",
+      depositPreAuth: "Security deposit (required at pickup, card hold on-site)",
     },
     // Documents
     documents: {
@@ -465,7 +465,7 @@ export const translations = {
       discount: "Zbritje",
       total: "Totali",
       deposit: "Depozita e Sigurisë",
-      depositNote: "Para-autorizuar në marrje, nuk tarifohet",
+      depositNote: "E kërkuar në marrje — siguri me mbajtje kartele në vend",
       confirmBooking: "Konfirmo Rezervimin",
       processing: "Duke procesuar...",
       saveProfile: "Ruaj detajet për rezervime të ardhshme",
@@ -688,7 +688,7 @@ export const translations = {
       vatRate: "TVSH (18%)",
       subtotalExclVat: "Nëntotali (pa TVSH)",
       totalInclVat: "Totali (me TVSH)",
-      depositPreAuth: "Depozita e sigurisë (para-autorizuar në marrje)",
+      depositPreAuth: "Depozita e sigurisë (e kërkuar në marrje, mbajtje kartele)",
     },
     // Documents
     documents: {

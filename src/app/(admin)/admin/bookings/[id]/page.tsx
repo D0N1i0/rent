@@ -278,39 +278,39 @@ export default async function AdminBookingDetailPage({
               </span>
               <span>{formatCurrency(booking.subtotal)}</span>
             </div>
-            {booking.extrasTotal > 0 && (
+            {Number(booking.extrasTotal) > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Extras</span>
                 <span>{formatCurrency(booking.extrasTotal)}</span>
               </div>
             )}
-            {booking.pickupFee > 0 && (
+            {Number(booking.pickupFee) > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Pickup fee</span>
                 <span>{formatCurrency(booking.pickupFee)}</span>
               </div>
             )}
-            {booking.dropoffFee > 0 && (
+            {Number(booking.dropoffFee) > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Drop-off fee</span>
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
-            {booking.discount > 0 && (
+            {Number(booking.discount) > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount{booking.couponCode ? ` (${booking.couponCode})` : ""}</span>
                 <span>-{formatCurrency(booking.discount)}</span>
               </div>
             )}
-            {(booking as { vatAmount?: number }).vatAmount != null && (booking as { vatAmount?: number }).vatAmount! > 0 && (
+            {(booking as unknown as { vatAmount?: number }).vatAmount != null && Number((booking as unknown as { vatAmount?: number }).vatAmount) > 0 && (
               <>
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal (excl. VAT)</span>
-                  <span>{formatCurrency(booking.totalAmount - ((booking as { vatAmount?: number }).vatAmount ?? 0))}</span>
+                  <span>{formatCurrency(Number(booking.totalAmount) - ((booking as unknown as { vatAmount?: number }).vatAmount ?? 0))}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
-                  <span>VAT ({Math.round(((booking as { vatRate?: number }).vatRate ?? 0) * 100)}%)</span>
-                  <span>{formatCurrency((booking as { vatAmount?: number }).vatAmount ?? 0)}</span>
+                  <span>VAT ({Math.round(Number((booking as unknown as { vatRate?: number }).vatRate ?? 0) * 100)}%)</span>
+                  <span>{formatCurrency((booking as unknown as { vatAmount?: number }).vatAmount ?? 0)}</span>
                 </div>
               </>
             )}

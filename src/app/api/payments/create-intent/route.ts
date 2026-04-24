@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { stripe, eurosToCents } from "@/lib/stripe";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { toNumber } from "@/lib/money";
 import { z } from "zod";
 
 const schema = z.object({ bookingId: z.string().min(1) });
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
       try {
         const existing = await stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
         if (
-          existing.amount === eurosToCents(booking.totalAmount) &&
+          existing.amount === eurosToCents(toNumber(booking.totalAmount)) &&
           existing.currency === "eur" &&
           (existing.status === "requires_payment_method" || existing.status === "requires_confirmation")
         ) {
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create new payment intent
-    const amountCents = eurosToCents(booking.totalAmount);
+    const amountCents = eurosToCents(toNumber(booking.totalAmount));
 
     const intent = await stripe.paymentIntents.create({
       amount: amountCents,

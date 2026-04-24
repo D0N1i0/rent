@@ -29,8 +29,8 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
   const settings = await getPublicSettings();
 
-  const vatAmount = booking.vatAmount ?? 0;
-  const preTaxTotal = booking.totalAmount - vatAmount;
+  const vatAmount = Number(booking.vatAmount ?? 0);
+  const preTaxTotal = Number(booking.totalAmount) - vatAmount;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -86,32 +86,32 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
               <span>{booking.durationDays} day{booking.durationDays !== 1 ? "s" : ""} × {formatCurrency(booking.basePricePerDay)}/day</span>
               <span>{formatCurrency(booking.subtotal)}</span>
             </div>
-            {booking.extrasTotal > 0 && (
+            {Number(booking.extrasTotal) > 0 && (
               <div className="flex justify-between text-gray-600">
                 <span>Extras</span>
                 <span>{formatCurrency(booking.extrasTotal)}</span>
               </div>
             )}
-            {booking.pickupFee > 0 && (
+            {Number(booking.pickupFee) > 0 && (
               <div className="flex justify-between text-gray-600">
                 <span>Pickup fee</span>
                 <span>{formatCurrency(booking.pickupFee)}</span>
               </div>
             )}
-            {booking.dropoffFee > 0 && (
+            {Number(booking.dropoffFee) > 0 && (
               <div className="flex justify-between text-gray-600">
                 <span>Drop-off fee</span>
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
-            {booking.vatAmount > 0 && (
+            {Number(booking.vatAmount) > 0 && (
               <>
                 <div className="border-t border-gray-100 pt-2 flex justify-between text-gray-500">
                   <span>Subtotal (excl. VAT)</span>
                   <span>{formatCurrency(preTaxTotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
-                  <span>VAT ({Math.round(booking.vatRate * 100)}%)</span>
+                  <span>VAT ({Math.round(Number(booking.vatRate) * 100)}%)</span>
                   <span>{formatCurrency(vatAmount)}</span>
                 </div>
               </>
@@ -121,7 +121,7 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
               <span className="text-crimson-600">{formatCurrency(booking.totalAmount)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-400">
-              <span>Security deposit (pre-authorised at pickup)</span>
+              <span>Security deposit (required at pickup, card hold on-site)</span>
               <span>{formatCurrency(booking.depositAmount)}</span>
             </div>
           </div>

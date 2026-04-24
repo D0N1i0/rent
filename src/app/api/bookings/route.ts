@@ -6,7 +6,8 @@ import { bookingSchema } from "@/lib/validations/booking";
 import { generateBookingRef } from "@/lib/utils";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { buildPriceBreakdown, buildExtraLineItems } from "@/lib/pricing";
-import { sendBookingConfirmationEmail } from "@/lib/email";
+import { sendBookingConfirmationEmail, sendAdminNewBookingEmail } from "@/lib/email";
+import { toNumber } from "@/lib/money";
 import { bookingConflictStatusFilter, buildBookingDateTimes, calculateOfferDiscount, closeAbandonedPendingBookings, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
 
 const MAX_REF_RETRIES = 5;
@@ -210,7 +211,7 @@ export async function POST(req: NextRequest) {
               vatRate: breakdown.vatRate,
               vatAmount: breakdown.vatAmount,
               couponCode: normalizedCouponCode || null,
-              depositAmount: car.deposit,
+              depositAmount: toNumber(car.deposit),
               totalAmount: breakdown.totalAmount,
               specialRequests: data.specialRequests?.trim() || null,
               status: "PENDING",
@@ -316,6 +317,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 12. Send confirmation email (non-blocking) ────────────────────────────
+    const depositAmt = toNumber(car.deposit);
     sendBookingConfirmationEmail(data.email, {
       bookingRef: booking.bookingRef,
       firstName: data.firstName,
@@ -325,8 +327,27 @@ export async function POST(req: NextRequest) {
       pickupDateTime: pickupDT,
       dropoffDateTime: returnDT,
       totalAmount: breakdown.totalAmount,
-      depositAmount: car.deposit,
+      depositAmount: depositAmt,
     }).catch((err) => console.error("[Email] Confirmation send failed:", err));
+
+    // ── 13. Notify admin of new booking (non-blocking) ────────────────────────
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendAdminNewBookingEmail(adminEmail, {
+        bookingRef: booking.bookingRef,
+        customerName: `${data.firstName} ${data.lastName}`,
+        customerEmail: data.email,
+        customerPhone: data.phone,
+        carName: car.name,
+        pickupLocation: pickupLoc.name,
+        dropoffLocation: dropoffLoc.name,
+        pickupDateTime: pickupDT,
+        dropoffDateTime: returnDT,
+        totalAmount: breakdown.totalAmount,
+        paymentStatus: "UNPAID",
+        bookingId: booking.id,
+      }).catch((err) => console.error("[Email] Admin notification send failed:", err));
+    }
 
     return NextResponse.json(
       { bookingRef: booking.bookingRef, bookingId: booking.id },

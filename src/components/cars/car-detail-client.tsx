@@ -109,9 +109,9 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
   }, [booking]);
 
   const effectivePricePerDay = useMemo(() => {
-    if (durationDays >= 30 && car.pricePerMonth) return car.pricePerMonth / 30;
-    if (durationDays >= 7 && car.pricePerWeek) return car.pricePerWeek / 7;
-    return car.pricePerDay;
+    if (durationDays >= 30 && car.pricePerMonth) return Number(car.pricePerMonth) / 30;
+    if (durationDays >= 7 && car.pricePerWeek) return Number(car.pricePerWeek) / 7;
+    return Number(car.pricePerDay);
   }, [durationDays, car]);
 
   const pickupLoc = locations.find(l => l.id === booking.pickupLocationId);
@@ -121,14 +121,14 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
     return selectedExtras.reduce((sum, extraId) => {
       const extra = extras.find(e => e.id === extraId);
       if (!extra) return sum;
-      if (extra.pricingType === "PER_DAY") return sum + extra.price * durationDays;
-      return sum + extra.price;
+      if (extra.pricingType === "PER_DAY") return sum + Number(extra.price) * durationDays;
+      return sum + Number(extra.price);
     }, 0);
   }, [selectedExtras, extras, durationDays]);
 
   const subtotal = effectivePricePerDay * durationDays;
-  const pickupFee = pickupLoc?.pickupFee ?? 0;
-  const dropoffFee = dropoffLoc?.dropoffFee ?? 0;
+  const pickupFee = Number(pickupLoc?.pickupFee ?? 0);
+  const dropoffFee = Number(dropoffLoc?.dropoffFee ?? 0);
   const preTaxTotal = subtotal + extrasTotal + pickupFee + (booking.sameLocation ? 0 : dropoffFee);
   const vatAmount = Number((preTaxTotal * KOSOVO_VAT_RATE).toFixed(2));
   const total = Number((preTaxTotal + vatAmount).toFixed(2));
@@ -395,7 +395,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                   </div>
                   <div>
                     <p className="font-semibold text-navy-900">{locale === "al" ? "Depozita e Sigurisë" : "Security Deposit"}</p>
-                    <p className="text-gray-600">{formatCurrency(car.deposit)} ({locale === "al" ? "para-autorizuar, nuk tarifohet" : "pre-authorised, not charged"})</p>
+                    <p className="text-gray-600">{formatCurrency(car.deposit)} ({locale === "al" ? "e kërkuar në marrje, mbajtje kartele" : "required at pickup, card hold on-site"})</p>
                   </div>
                   <div>
                     <p className="font-semibold text-navy-900">{locale === "al" ? "Sigurimi" : "Insurance"}</p>
@@ -445,7 +445,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                 <h2 className="font-bold text-navy-900 text-lg mb-4">{locale === "al" ? "Automjete të Ngjashme" : "Similar Vehicles"}</h2>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {relatedCars.map((rc) => (
-                    <CarCard key={rc.id} car={rc} />
+                    <CarCard key={rc.id} car={rc as unknown as import("@/components/cars/car-card").CarCardData} />
                   ))}
                 </div>
               </div>
@@ -466,7 +466,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                     <select value={booking.pickupLocationId} onChange={(e) => setBooking(b => ({ ...b, pickupLocationId: e.target.value }))} className="form-input pl-9 text-sm appearance-none">
                       <option value="">{locale === "al" ? "Zgjidh vendndodhjen" : "Select location"}</option>
                       {locations.filter(l => l.isPickupPoint).map(loc => (
-                        <option key={loc.id} value={loc.id}>{loc.isAirport ? "✈ " : ""}{loc.name}{loc.pickupFee > 0 ? ` (+€${loc.pickupFee})` : ""}</option>
+                        <option key={loc.id} value={loc.id}>{loc.isAirport ? "✈ " : ""}{loc.name}{Number(loc.pickupFee) > 0 ? ` (+€${Number(loc.pickupFee)})` : ""}</option>
                       ))}
                     </select>
                   </div>
@@ -575,7 +575,7 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                     <span>{formatCurrency(total)}</span>
                   </div>
                   <div className="flex justify-between text-gray-500 text-xs">
-                    <span>{locale === "al" ? "Depozita e sigurisë (para-auth)" : "Security deposit (pre-auth)"}</span>
+                    <span>{locale === "al" ? "Depozita e sigurisë (në marrje)" : "Security deposit (at pickup)"}</span>
                     <span>{formatCurrency(car.deposit)}</span>
                   </div>
                 </div>

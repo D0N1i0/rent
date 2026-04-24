@@ -12,8 +12,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = "€"): string {
-  return `${currency}${amount.toLocaleString("en-US", {
+// Accepts number, string (from JSON-serialised Prisma.Decimal), or Decimal-like
+export function formatCurrency(amount: number | string | { toNumber(): number }, currency = "€"): string {
+  const n =
+    typeof amount === "object" && amount !== null && "toNumber" in amount
+      ? (amount as { toNumber(): number }).toNumber()
+      : Number(amount);
+  return `${currency}${n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

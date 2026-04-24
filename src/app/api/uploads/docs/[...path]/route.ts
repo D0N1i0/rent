@@ -1,7 +1,8 @@
 // src/app/api/uploads/docs/[...path]/route.ts
-// Authenticated serving route for private booking documents (licence/ID scans).
-// Files are stored in `private-uploads/docs/` (outside /public) and served
-// through here only after verifying session ownership or admin role.
+// Authenticated serving route for private booking documents.
+// New uploads go to Cloudinary (stored as full https:// URLs in DB).
+// This route is kept for backwards-compatibility with any documents uploaded
+// before the cloud migration (stored as /api/uploads/docs/<filename> paths).
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +12,6 @@ import { join, resolve, basename } from "path";
 
 const PRIVATE_DOCS_DIR = join(process.cwd(), "private-uploads", "docs");
 
-// Prevent path traversal: ensure the resolved path is inside PRIVATE_DOCS_DIR.
 function safePath(filename: string): string | null {
   const resolved = resolve(PRIVATE_DOCS_DIR, basename(filename));
   if (!resolved.startsWith(PRIVATE_DOCS_DIR)) return null;
@@ -28,7 +28,6 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Only use the last segment (filename) — prevents traversal via the catch-all.
   const filename = path[path.length - 1];
   if (!filename) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -42,7 +41,6 @@ export async function GET(
   const isAdmin = isAdminRole(session.user.role as string);
 
   if (!isAdmin) {
-    // For non-admins: verify the file belongs to one of their bookings.
     const booking = await prisma.booking.findFirst({
       where: {
         userId: session.user.id,
@@ -62,7 +60,6 @@ export async function GET(
   try {
     const buffer = await readFile(filePath);
 
-    // Determine content type from extension
     const ext = filename.split(".").pop()?.toLowerCase();
     const contentType =
       ext === "pdf"
@@ -76,9 +73,7 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
-        // Force download for PDFs; inline for images (still requires session)
         "Content-Disposition": ext === "pdf" ? `attachment; filename="${filename}"` : "inline",
-        // No browser caching — documents are sensitive
         "Cache-Control": "no-store, max-age=0",
       },
     });

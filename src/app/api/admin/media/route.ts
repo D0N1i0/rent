@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { uploadImage, deleteCloudinaryFile } from "@/lib/cloudinary";
 import { isValidImageType } from "@/lib/utils";
 
 async function requireAdmin() {
@@ -27,13 +26,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
     const uploadedFiles = [];
 
     for (const file of files) {
-      // Validate file type
       if (!isValidImageType(file.type)) {
         return NextResponse.json(
           { error: `Invalid file type: ${file.type}. Only JPEG, PNG, and WebP are allowed.` },
@@ -41,7 +36,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Validate file size
       if (file.size > MAX_FILE_SIZE) {
         return NextResponse.json(
           { error: `File too large: ${file.name}. Maximum size is 5MB.` },
@@ -52,23 +46,17 @@ export async function POST(req: NextRequest) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Generate unique filename
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").toLowerCase();
-      const timestamp = Date.now();
-      const filename = `${timestamp}_${safeName}`;
-      const filePath = path.join(uploadDir, filename);
-      const publicUrl = `/uploads/${filename}`;
-
-      await writeFile(filePath, buffer);
+      const result = await uploadImage(buffer, { folder: "autokos/media" });
 
       const mediaFile = await prisma.mediaFile.create({
         data: {
           filename: file.name,
-          url: publicUrl,
+          url: result.secureUrl,
           mimeType: file.type,
           size: file.size,
-          folder: "uploads",
+          folder: "autokos/media",
+          // Store Cloudinary public_id for potential future deletion
+          alt: result.publicId,
         },
       });
 
@@ -88,4 +76,30 @@ export async function GET() {
 
   const files = await prisma.mediaFile.findMany({ orderBy: { createdAt: "desc" } });
   return NextResponse.json({ files });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  try {
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+    const file = await prisma.mediaFile.findUnique({ where: { id } });
+    if (!file) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Delete from Cloudinary — alt field holds the publicId
+    if (file.alt && file.url.includes("cloudinary.com")) {
+      await deleteCloudinaryFile(file.alt, "image").catch((err) =>
+        console.error("[Media] Cloudinary delete failed:", err)
+      );
+    }
+
+    await prisma.mediaFile.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Media delete error:", error);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
 }

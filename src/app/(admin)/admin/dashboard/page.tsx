@@ -70,13 +70,13 @@ export default async function AdminDashboardPage() {
       pendingBookings={pendingBookings}
       confirmedBookings={confirmedBookings}
       completedBookings={completedBookings}
-      totalRevenue={totalRevenue._sum.totalAmount ?? 0}
+      totalRevenue={Number(totalRevenue._sum.totalAmount ?? 0)}
       totalCars={totalCars}
       activeCars={activeCars}
       totalUsers={totalUsers}
-      todayRevenue={todayRevenue._sum.totalAmount ?? 0}
+      todayRevenue={Number(todayRevenue._sum.totalAmount ?? 0)}
       todayBookings={todayBookings}
-      recentBookings={recentBookings}
+      recentBookings={recentBookings as unknown as { id: string; guestFirstName: string | null; guestLastName: string | null; status: string; car: { name: string }; pickupLocation: { name: string }; totalAmount: number; createdAt: Date }[]}
       recentActivity={recentActivity}
       cancelledButPaid={cancelledButPaid}
       completedButUnpaid={completedButUnpaid}

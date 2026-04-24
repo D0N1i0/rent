@@ -20,5 +20,5 @@ export default async function CustomerBookingsPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  return <BookingsListClient bookings={bookings} />;
+  return <BookingsListClient bookings={bookings as unknown as { id: string; bookingRef: string; status: string; paymentStatus: string; totalAmount: number; durationDays: number; pickupDateTime: Date; dropoffDateTime: Date; car: { name: string }; pickupLocation: { name: string } }[]} />;
 }
