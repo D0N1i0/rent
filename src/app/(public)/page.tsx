@@ -30,8 +30,10 @@ async function getHomeData(locale: "en" | "al") {
     }),
     prisma.testimonial.findMany({ where: { isActive: true, isFeatured: true }, orderBy: { sortOrder: "asc" }, take: 6 }),
     prisma.offer.findMany({ where: { isActive: true, OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }] }, orderBy: { sortOrder: "asc" }, take: 4 }),
-    // Fetch FAQ items for the active locale (fall back to "en" items if no AL items exist)
-    prisma.faqItem.findMany({ where: { isActive: true, language: locale }, orderBy: { sortOrder: "asc" }, take: 6 }),
+    // Fetch FAQ items for the active locale — falls back to no-language filter if the
+    // migration adding the language column hasn't been applied to the DB yet.
+    prisma.faqItem.findMany({ where: { isActive: true, language: locale }, orderBy: { sortOrder: "asc" }, take: 6 })
+      .catch(() => prisma.faqItem.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, take: 6 })),
     prisma.location.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.siteSetting.findMany({ where: { group: "homepage" } }),
     getPublicSettings(),
@@ -51,10 +53,11 @@ async function getHomeData(locale: "en" | "al") {
     }
   }
 
-  // If no FAQ items found for the locale, fall back to English
+  // If no FAQ items found for the locale, fall back to any active items
   const resolvedFaqItems = faqItems.length > 0
     ? faqItems
-    : await prisma.faqItem.findMany({ where: { isActive: true, language: "en" }, orderBy: { sortOrder: "asc" }, take: 6 });
+    : await prisma.faqItem.findMany({ where: { isActive: true, language: "en" }, orderBy: { sortOrder: "asc" }, take: 6 })
+        .catch(() => prisma.faqItem.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, take: 6 }));
 
   return { featuredCars, testimonials, offers, faqItems: resolvedFaqItems, locations, homepageContent, settings, activeCarCount };
 }

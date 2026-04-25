@@ -14,11 +14,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session?.user) redirect("/login?callbackUrl=/dashboard");
 
   const [settings, userRecord] = await Promise.all([
-    getPublicSettings(),
+    getPublicSettings().catch(() => ({ businessName: "AutoKos" }) as Awaited<ReturnType<typeof getPublicSettings>>),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { emailVerified: true, email: true },
-    }),
+    }).catch(() => null),
   ]);
 
   const isUnverified = userRecord && !userRecord.emailVerified;

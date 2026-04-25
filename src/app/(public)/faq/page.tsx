@@ -23,17 +23,32 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function FaqPage() {
   const locale = await getServerLocale();
 
-  let items = await prisma.faqItem.findMany({
-    where: { isActive: true, language: locale },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-  });
+  // Query by language — falls back gracefully if the migration hasn't been applied yet
+  let items = await prisma.faqItem
+    .findMany({
+      where: { isActive: true, language: locale },
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+    })
+    .catch(() =>
+      prisma.faqItem.findMany({
+        where: { isActive: true },
+        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      })
+    );
 
   // Fall back to English if no items exist for the locale
   if (items.length === 0) {
-    items = await prisma.faqItem.findMany({
-      where: { isActive: true, language: "en" },
-      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-    });
+    items = await prisma.faqItem
+      .findMany({
+        where: { isActive: true, language: "en" },
+        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      })
+      .catch(() =>
+        prisma.faqItem.findMany({
+          where: { isActive: true },
+          orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+        })
+      );
   }
 
   const categories = [...new Set(items.map(i => i.category).filter(Boolean))] as string[];

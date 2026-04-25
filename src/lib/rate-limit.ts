@@ -4,9 +4,7 @@
 // set (production). Falls back to in-memory storage for local development.
 // All callers must await — the return type is always a Promise.
 
-// Use the fetch-based entry point so this module works in both Node.js and
-// the Edge Runtime (middleware bundles auth.ts → rate-limit.ts).
-import { Redis } from "@upstash/redis/cloudflare";
+import { Redis } from "@upstash/redis";
 
 // ─── Result type (unchanged from previous synchronous API) ───────────────────
 
