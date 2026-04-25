@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   // A legit customer rarely sees more than a couple of misses before typing it
   // right or giving up; an attacker needs thousands of attempts to find a code.
   const ip = getClientIp(req);
-  const rl = rateLimit(`coupon-validate:${ip}`, 20, 5 * 60 * 1000);
+  const rl = await rateLimit(`coupon-validate:${ip}`, 20, 5 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ valid: false, error: "Too many attempts" }, { status: 429 });
   }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (!offer) {
       // Count invalid attempts separately — 8 misses per hour is plenty for a
       // real user and far below what brute-force needs.
-      const miss = rateLimit(`coupon-invalid:${ip}`, 8, 60 * 60 * 1000);
+      const miss = await rateLimit(`coupon-invalid:${ip}`, 8, 60 * 60 * 1000);
       if (!miss.allowed) {
         return NextResponse.json(
           { valid: false, error: "Too many invalid attempts. Please try again later." },

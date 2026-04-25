@@ -17,7 +17,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 3 attempts per hour per IP — deletion is irreversible
   const ip = getClientIp(req);
-  const rl = rateLimit(`account-delete:${ip}`, 3, 60 * 60 * 1000);
+  const rl = await rateLimit(`account-delete:${ip}`, 3, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
   }

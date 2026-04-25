@@ -33,7 +33,7 @@ export async function POST(
 
   // Rate limit: 10 uploads per hour per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`doc-upload:${ip}`, 10, 60 * 60 * 1000);
+  const rl = await rateLimit(`doc-upload:${ip}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many upload attempts." }, { status: 429 });
   }

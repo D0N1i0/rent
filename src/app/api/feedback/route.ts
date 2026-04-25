@@ -16,7 +16,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 10 submissions per 30 minutes per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`feedback:${ip}`, 10, 30 * 60 * 1000);
+  const rl = await rateLimit(`feedback:${ip}`, 10, 30 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many submissions. Please wait before trying again." }, { status: 429 });
   }

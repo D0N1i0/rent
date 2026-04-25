@@ -9,7 +9,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 export async function POST(req: NextRequest) {
   // Rate limit: 5 requests per 15 minutes per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000);
+  const rl = await rateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many requests. Please wait before trying again." },

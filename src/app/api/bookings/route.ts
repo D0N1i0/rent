@@ -15,7 +15,7 @@ const MAX_REF_RETRIES = 5;
 export async function POST(req: NextRequest) {
   // Rate limit: 20 booking attempts per hour per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`booking:${ip}`, 20, 60 * 60 * 1000);
+  const rl = await rateLimit(`booking:${ip}`, 20, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many booking attempts. Please wait before trying again." },

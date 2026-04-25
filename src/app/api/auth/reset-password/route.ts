@@ -13,7 +13,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 5 attempts per 15 minutes per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`reset-password:${ip}`, 5, 15 * 60 * 1000);
+  const rl = await rateLimit(`reset-password:${ip}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many attempts. Please wait before trying again." }, { status: 429 });
   }

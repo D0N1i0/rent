@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Rate limit: 10 password-change attempts per 15 minutes per user
-  const rl = rateLimit(`change-password:${session.user.id}`, 10, 15 * 60 * 1000);
+  const rl = await rateLimit(`change-password:${session.user.id}`, 10, 15 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many attempts. Please wait before trying again." },

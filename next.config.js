@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const { withSentryConfig } = require("@sentry/nextjs");
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -14,7 +15,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' js.stripe.com",
       // Stripe Elements iframe
       "frame-src js.stripe.com hooks.stripe.com",
-      // API calls: own origin + Stripe + Cloudinary
+      // API calls: own origin + Stripe + Cloudinary.
+      // Sentry errors are tunnelled through /monitoring (same origin) so *.ingest.sentry.io is not needed.
       "connect-src 'self' api.stripe.com res.cloudinary.com",
       // Images: own origin + Cloudinary CDN + Unsplash (seed images)
       "img-src 'self' data: blob: res.cloudinary.com images.unsplash.com",
@@ -56,4 +58,25 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  // Source map upload — only active when SENTRY_AUTH_TOKEN is set (CI/Vercel)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Suppress Sentry CLI output in non-CI builds
+  silent: !process.env.CI,
+
+  // Don't expose source maps in browser bundles
+  hideSourceMaps: true,
+
+  // Remove Sentry logger statements from bundle
+  disableLogger: true,
+
+  // Tunnel Sentry errors through /monitoring so they aren't blocked by ad blockers
+  // and so we don't need to add *.ingest.sentry.io to our CSP.
+  tunnelRoute: "/monitoring",
+
+  // We're not using Vercel Cron Monitoring
+  automaticVercelMonitors: false,
+});
