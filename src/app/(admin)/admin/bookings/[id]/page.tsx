@@ -6,6 +6,8 @@ import Link from "next/link";
 import { formatCurrency, formatDateTime, getStatusColor, getPaymentStatusColor } from "@/lib/utils";
 import { BookingActionButtons } from "@/components/admin/booking-action-buttons";
 import { BookingNotesEditor } from "@/components/admin/booking-notes-editor";
+import { RefundPanel } from "@/components/admin/refund-panel";
+import { toNumber } from "@/lib/money";
 import { Car, MapPin, Calendar, User, CreditCard, ChevronLeft, Clock, AlertTriangle, Receipt } from "lucide-react";
 
 export default async function AdminBookingDetailPage({
@@ -29,6 +31,10 @@ export default async function AdminBookingDetailPage({
           changedBy: { select: { firstName: true, lastName: true, email: true } },
         },
         orderBy: { createdAt: "asc" },
+      },
+      refunds: {
+        include: { initiatedBy: { select: { firstName: true, lastName: true } } },
+        orderBy: { createdAt: "desc" },
       },
     },
   });
@@ -278,39 +284,39 @@ export default async function AdminBookingDetailPage({
               </span>
               <span>{formatCurrency(booking.subtotal)}</span>
             </div>
-            {booking.extrasTotal > 0 && (
+            {Number(booking.extrasTotal) > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Extras</span>
                 <span>{formatCurrency(booking.extrasTotal)}</span>
               </div>
             )}
-            {booking.pickupFee > 0 && (
+            {Number(booking.pickupFee) > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Pickup fee</span>
                 <span>{formatCurrency(booking.pickupFee)}</span>
               </div>
             )}
-            {booking.dropoffFee > 0 && (
+            {Number(booking.dropoffFee) > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Drop-off fee</span>
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
-            {booking.discount > 0 && (
+            {Number(booking.discount) > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount{booking.couponCode ? ` (${booking.couponCode})` : ""}</span>
                 <span>-{formatCurrency(booking.discount)}</span>
               </div>
             )}
-            {(booking as { vatAmount?: number }).vatAmount != null && (booking as { vatAmount?: number }).vatAmount! > 0 && (
+            {(booking as unknown as { vatAmount?: number }).vatAmount != null && Number((booking as unknown as { vatAmount?: number }).vatAmount) > 0 && (
               <>
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal (excl. VAT)</span>
-                  <span>{formatCurrency(booking.totalAmount - ((booking as { vatAmount?: number }).vatAmount ?? 0))}</span>
+                  <span>{formatCurrency(Number(booking.totalAmount) - ((booking as unknown as { vatAmount?: number }).vatAmount ?? 0))}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
-                  <span>VAT ({Math.round(((booking as { vatRate?: number }).vatRate ?? 0) * 100)}%)</span>
-                  <span>{formatCurrency((booking as { vatAmount?: number }).vatAmount ?? 0)}</span>
+                  <span>VAT ({Math.round(Number((booking as unknown as { vatRate?: number }).vatRate ?? 0) * 100)}%)</span>
+                  <span>{formatCurrency((booking as unknown as { vatAmount?: number }).vatAmount ?? 0)}</span>
                 </div>
               </>
             )}
@@ -401,6 +407,25 @@ export default async function AdminBookingDetailPage({
           )}
         </div>
       )}
+
+      {/* Refund panel — always rendered; internally shows/hides controls based on eligibility */}
+      <RefundPanel
+        bookingId={booking.id}
+        bookingRef={booking.bookingRef}
+        totalAmount={toNumber(booking.totalAmount)}
+        amountRefunded={toNumber(booking.amountRefunded)}
+        paymentStatus={booking.paymentStatus}
+        hasStripePayment={!!booking.stripePaymentIntentId}
+        existingRefunds={booking.refunds.map((r) => ({
+          id: r.id,
+          stripeRefundId: r.stripeRefundId,
+          amount: toNumber(r.amount),
+          reason: r.reason,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          initiatedBy: r.initiatedBy,
+        }))}
+      />
 
       {/* Status history */}
       {booking.statusHistory.length > 0 && (

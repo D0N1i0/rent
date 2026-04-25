@@ -76,7 +76,7 @@ async function getEmailBizInfo(): Promise<EmailBizInfo> {
     const m = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     return {
       businessName: m.business_name || "AutoKos",
-      phone: m.contact_phone || "+383 44 123 456",
+      phone: m.contact_phone || "+383 49 181 884",
       supportEmail: m.contact_email || "info@autokos.com",
       address: m.contact_address || "Rr. Nënë Tereza, Nr. 45, Prishtinë 10000, Kosovo",
       appUrl: APP_URL,
@@ -84,7 +84,7 @@ async function getEmailBizInfo(): Promise<EmailBizInfo> {
   } catch {
     return {
       businessName: "AutoKos",
-      phone: "+383 44 123 456",
+      phone: "+383 49 181 884",
       supportEmail: "info@autokos.com",
       address: "Rr. Nënë Tereza, Nr. 45, Prishtinë 10000, Kosovo",
       appUrl: APP_URL,
@@ -246,7 +246,7 @@ export async function sendBookingConfirmationEmail(
           </tr>
           <tr>
             <td style="padding:8px 0;color:#6b7280;font-size:13px;">Security Deposit:</td>
-            <td style="padding:8px 0;color:#6b7280;font-size:13px;">&#8364;${booking.depositAmount.toFixed(2)} (pre-authorised at pickup, not charged)</td>
+            <td style="padding:8px 0;color:#6b7280;font-size:13px;">&#8364;${booking.depositAmount.toFixed(2)} (required at vehicle pickup — handled via card hold on-site)</td>
           </tr>
         </table>
       </div>
@@ -367,6 +367,169 @@ export async function sendEmailVerificationEmail(
       <p style="color:#6b7280;font-size:14px;">If you did not create an account, you can safely ignore this email.</p>
       <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
       <p style="color:#9ca3af;font-size:12px;">If the button above doesn&apos;t work, copy this link:<br/><a href="${escapeHtml(verifyUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(verifyUrl)}</a></p>
+    `, biz),
+  });
+}
+
+export async function sendRefundEmail(
+  email: string,
+  data: {
+    bookingRef: string;
+    customerFirstName: string;
+    amount: number;
+    isFullRefund: boolean;
+    reason: string;
+  }
+): Promise<void> {
+  const biz = await getEmailBizInfo();
+
+  const safeRef = escapeHtml(data.bookingRef);
+  const safeName = escapeHtml(data.customerFirstName);
+  const safeReason = escapeHtml(data.reason);
+
+  await sendMail({
+    to: email,
+    subject: `Refund Processed — ${data.bookingRef} | ${biz.businessName}`,
+    html: htmlWrapper(`
+      <div style="background:#fef3c7;border-left:4px solid #d97706;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+        <p style="color:#92400e;font-weight:bold;font-size:18px;margin:0;">Refund Processed</p>
+      </div>
+      <p style="color:#374151;">Hi ${safeName},</p>
+      <p style="color:#374151;">We have processed a ${data.isFullRefund ? "full" : "partial"} refund for your booking <strong>${safeRef}</strong>.</p>
+
+      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Booking Reference:</td>
+            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Refund Amount:</td>
+            <td style="padding:8px 0;font-weight:bold;font-size:20px;color:#d97706;border-top:1px solid #e4e4e7;">&#8364;${data.amount.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Type:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${data.isFullRefund ? "Full refund" : "Partial refund"}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Reason:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;font-style:italic;">${safeReason}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color:#374151;font-size:14px;">The refund will appear on your original payment method within <strong>5–10 business days</strong>, depending on your bank.</p>
+
+      <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
+        <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Questions?</p>
+        <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+      </div>
+    `, biz),
+  });
+}
+
+export async function sendAdminNewBookingEmail(
+  adminEmail: string,
+  booking: {
+    bookingRef: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    carName: string;
+    pickupLocation: string;
+    dropoffLocation: string;
+    pickupDateTime: Date;
+    dropoffDateTime: Date;
+    totalAmount: number;
+    paymentStatus: string;
+    bookingId: string;
+  }
+): Promise<void> {
+  const biz = await getEmailBizInfo();
+
+  const pickupStr = booking.pickupDateTime.toLocaleString("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const returnStr = booking.dropoffDateTime.toLocaleString("en-GB", {
+    timeZone: BUSINESS_TIMEZONE,
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const safeRef = escapeHtml(booking.bookingRef);
+  const safeName = escapeHtml(booking.customerName);
+  const safeEmail = escapeHtml(booking.customerEmail);
+  const safePhone = escapeHtml(booking.customerPhone);
+  const safeCar = escapeHtml(booking.carName);
+  const safePickup = escapeHtml(booking.pickupLocation);
+  const safeDropoff = escapeHtml(booking.dropoffLocation);
+  const adminLink = `${biz.appUrl}/admin/bookings/${escapeHtml(booking.bookingId)}`;
+
+  await sendMail({
+    to: adminEmail,
+    subject: `🆕 New Booking ${booking.bookingRef} — ${booking.carName}`,
+    html: htmlWrapper(`
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+        <p style="color:#1e40af;font-weight:bold;font-size:18px;margin:0;">New Booking Received</p>
+        <p style="color:#1d4ed8;margin:4px 0 0;font-size:14px;">A new booking has been created and requires confirmation.</p>
+      </div>
+
+      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;width:40%;">Booking Ref:</td>
+            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Customer:</td>
+            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;border-top:1px solid #e4e4e7;">${safeName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Email:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;"><a href="mailto:${safeEmail}" style="color:#0F1E3C;">${safeEmail}</a></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Phone:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safePhone}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Vehicle:</td>
+            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;border-top:1px solid #e4e4e7;">${safeCar}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Pickup:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safePickup}<br/><strong>${pickupStr}</strong></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Return:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safeDropoff}<br/><strong>${returnStr}</strong></td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0 8px;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Total:</td>
+            <td style="padding:12px 0 8px;font-weight:bold;font-size:20px;color:#E63B2E;border-top:1px solid #e4e4e7;">&#8364;${booking.totalAmount.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Payment:</td>
+            <td style="padding:8px 0;border-top:1px solid #e4e4e7;"><span style="background:#fef2f2;color:#b91c1c;padding:2px 8px;border-radius:4px;font-size:13px;font-weight:bold;">${escapeHtml(booking.paymentStatus)}</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align:center;margin-top:24px;">
+        <a href="${adminLink}" style="background:#0F1E3C;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
+          View Booking in Admin Panel
+        </a>
+      </div>
     `, biz),
   });
 }

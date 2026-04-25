@@ -522,7 +522,7 @@ export function BookingFormClient({
                   {selectedExtras.map(id => {
                     const extra = allExtras.find(e => e.id === id);
                     if (!extra) return null;
-                    const extraCost = extra.pricingType === "PER_DAY" ? extra.price * durationDays : extra.price;
+                    const extraCost = extra.pricingType === "PER_DAY" ? Number(extra.price) * durationDays : Number(extra.price);
                     return (
                       <div key={id} className="flex justify-between text-xs text-gray-600 mb-1">
                         <span>{extra.name}</span>

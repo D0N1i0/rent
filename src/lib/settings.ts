@@ -25,6 +25,7 @@ export interface PublicSettings {
   logoUrl: string;
   bookingAdvanceHours: number;
   cancellationFreeHours: number;
+  businessNipt: string;
 }
 
 const ALL_KEYS = [
@@ -43,6 +44,7 @@ const ALL_KEYS = [
   "google_maps_embed",
   "booking_advance_hours",
   "cancellation_free_hours",
+  "business_nipt",
   // Legacy keys
   "phone", "support_email", "address",
 ];
@@ -60,7 +62,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
     businessDescription:
       m.business_description ||
       "Kosovo's most trusted car rental service. Transparent pricing, clean vehicles, and 24/7 support.",
-    phone: m.contact_phone || m.phone || "+383 44 123 456",
+    phone: m.contact_phone || m.phone || "+383 49 181 884",
     phone2: m.contact_phone_2 || "",
     supportEmail: m.contact_email || m.support_email || "info@autokos.com",
     address:
@@ -72,7 +74,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
       m.footer_tagline ||
       "Kosovo's trusted car rental service. Transparent pricing, clean vehicles, and 24/7 support.",
     whatsappNumber: (
-      m.whatsapp_number || "38344123456"
+      m.whatsapp_number || "38349181884"
     ).replace(/\D/g, ""),
     facebookUrl:
       m.social_facebook || m.facebook_url || "https://facebook.com/autokos",
@@ -90,6 +92,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
     logoUrl: m.logo_url || "",
     bookingAdvanceHours: Number(m.booking_advance_hours ?? 2),
     cancellationFreeHours: Number(m.cancellation_free_hours ?? 48),
+    businessNipt: m.business_nipt || "",
   };
 }
 

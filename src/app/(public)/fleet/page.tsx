@@ -44,7 +44,7 @@ export default async function FleetPage() {
   const { cars, categories, locations } = await getFleetData();
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 border-2 border-navy-900 border-t-transparent rounded-full animate-spin" /></div>}>
-      <FleetClient cars={cars} categories={categories} locations={locations} />
+      <FleetClient cars={cars as unknown as import("@/components/cars/car-card").CarCardData[]} categories={categories} locations={locations} />
     </Suspense>
   );
 }

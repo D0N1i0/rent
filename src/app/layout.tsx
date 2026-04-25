@@ -5,6 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { LanguageProvider } from "@/lib/i18n/context";
+import { CookieConsent } from "@/components/ui/cookie-consent";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LanguageProvider>
             {children}
             <Toaster />
+            <CookieConsent />
           </LanguageProvider>
         </AuthProvider>
       </body>

@@ -2,6 +2,7 @@ import { addHours } from "date-fns";
 import type { Offer, Prisma, SeasonalPricing } from "@prisma/client";
 import { BUSINESS_TIMEZONE, calculateRentalDays } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
+import { toNumber } from "@/lib/money";
 
 export const BOOKING_RULES = {
   minimumLeadHours: 2,
@@ -173,16 +174,20 @@ export function calculateOfferDiscount(params: {
   if (offer.validFrom && now < offer.validFrom) return 0;
   if (offer.validUntil && now > offer.validUntil) return 0;
 
+  const minSubtotal = toNumber(offer.minSubtotal);
+  const discountPct = toNumber(offer.discountPct);
+  const discountAmt = toNumber(offer.discountAmt);
+
   // Enforce minimum subtotal requirement
-  if (offer.minSubtotal != null && subtotal < offer.minSubtotal) return 0;
+  if (offer.minSubtotal != null && subtotal < minSubtotal) return 0;
 
   // Enforce minimum rental days requirement
   if (offer.minRentalDays != null && durationDays < offer.minRentalDays) return 0;
 
   // Apply percentage discount first, then add fixed amount discount on top
   // Business rule: both can apply simultaneously (e.g. 10% + €5 fixed)
-  const pctDiscount = offer.discountPct ? subtotal * (offer.discountPct / 100) : 0;
-  const fixedDiscount = offer.discountAmt ?? 0;
+  const pctDiscount = discountPct ? subtotal * (discountPct / 100) : 0;
+  const fixedDiscount = discountAmt;
 
   // Total discount cannot exceed the subtotal itself
   return Number(Math.min(subtotal, pctDiscount + fixedDiscount).toFixed(2));

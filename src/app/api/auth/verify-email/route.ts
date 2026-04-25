@@ -64,7 +64,7 @@ const resendSchema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 5 resend attempts per hour per IP to prevent email flooding
   const ip = getClientIp(req);
-  const rl = rateLimit(`verify-email-resend:${ip}`, 5, 60 * 60 * 1000);
+  const rl = await rateLimit(`verify-email-resend:${ip}`, 5, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many requests. Please wait before trying again." }, { status: 429 });
   }

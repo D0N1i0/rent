@@ -40,7 +40,7 @@ export function ExtrasAdminClient({ extras: init }: { extras: Extra[] }) {
   };
 
   const handleEdit = (e: Extra) => {
-    setForm({ name: e.name, description: e.description ?? "", price: e.price, pricingType: e.pricingType, isActive: e.isActive, sortOrder: e.sortOrder });
+    setForm({ name: e.name, description: e.description ?? "", price: Number(e.price), pricingType: e.pricingType, isActive: e.isActive, sortOrder: e.sortOrder });
     setEditingId(e.id); setShowForm(true);
   };
 

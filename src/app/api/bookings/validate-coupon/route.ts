@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   // A legit customer rarely sees more than a couple of misses before typing it
   // right or giving up; an attacker needs thousands of attempts to find a code.
   const ip = getClientIp(req);
-  const rl = rateLimit(`coupon-validate:${ip}`, 20, 5 * 60 * 1000);
+  const rl = await rateLimit(`coupon-validate:${ip}`, 20, 5 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ valid: false, error: "Too many attempts" }, { status: 429 });
   }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (!offer) {
       // Count invalid attempts separately — 8 misses per hour is plenty for a
       // real user and far below what brute-force needs.
-      const miss = rateLimit(`coupon-invalid:${ip}`, 8, 60 * 60 * 1000);
+      const miss = await rateLimit(`coupon-invalid:${ip}`, 8, 60 * 60 * 1000);
       if (!miss.allowed) {
         return NextResponse.json(
           { valid: false, error: "Too many invalid attempts. Please try again later." },
@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
     if (offer.validUntil && now > offer.validUntil) {
       return NextResponse.json({ valid: false, error: `This coupon expired on ${offer.validUntil.toLocaleDateString("en-GB")}` });
     }
-    if (offer.minSubtotal != null && subtotal < offer.minSubtotal) {
+    if (offer.minSubtotal != null && subtotal < Number(offer.minSubtotal)) {
       return NextResponse.json({
         valid: false,
-        error: `Minimum booking subtotal of €${offer.minSubtotal.toFixed(2)} required (your subtotal: €${subtotal.toFixed(2)})`,
+        error: `Minimum booking subtotal of €${Number(offer.minSubtotal).toFixed(2)} required (your subtotal: €${subtotal.toFixed(2)})`,
       });
     }
     if (offer.minRentalDays != null && durationDays < offer.minRentalDays) {
@@ -77,11 +77,11 @@ export async function POST(req: NextRequest) {
 
     const description =
       offer.discountPct && offer.discountAmt
-        ? `${offer.discountPct}% + €${offer.discountAmt.toFixed(2)} off`
+        ? `${offer.discountPct}% + €${Number(offer.discountAmt).toFixed(2)} off`
         : offer.discountPct
         ? `${offer.discountPct}% off`
         : offer.discountAmt
-        ? `€${offer.discountAmt.toFixed(2)} off`
+        ? `€${Number(offer.discountAmt).toFixed(2)} off`
         : "Discount applied";
 
     return NextResponse.json({

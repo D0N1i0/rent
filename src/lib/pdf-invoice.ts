@@ -244,7 +244,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
 </table>
 
 <div class="deposit-note">
-  <strong>Security deposit:</strong> ${fmt(data.depositAmount)} — Pre-authorised at vehicle pickup, not charged on this invoice.
+  <strong>Security deposit:</strong> ${fmt(data.depositAmount)} — Required at vehicle pickup — card hold on-site, not charged on this invoice.
 </div>
 
 <hr class="divider">

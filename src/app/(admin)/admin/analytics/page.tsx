@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { isAdminRole } from "@/lib/authz";
 import { formatCurrency } from "@/lib/utils";
+import { toNumber } from "@/lib/money";
 import Link from "next/link";
 import { TrendingUp, Car, Users, Calendar, Download, ArrowLeft } from "lucide-react";
 import { subDays, subMonths, startOfMonth, endOfMonth, format } from "date-fns";
@@ -123,11 +124,11 @@ export default async function AdminAnalyticsPage() {
   const carMap = Object.fromEntries(carDetails.map((c) => [c.id, c]));
 
   // Calculate month-over-month change
+  const lastMonthAmt = toNumber(lastMonthRevenue._sum.totalAmount);
+  const thisMonthAmt = toNumber(thisMonthRevenue._sum.totalAmount);
   const revenueChange =
-    lastMonthRevenue._sum.totalAmount && lastMonthRevenue._sum.totalAmount > 0
-      ? (((thisMonthRevenue._sum.totalAmount ?? 0) - lastMonthRevenue._sum.totalAmount) /
-          lastMonthRevenue._sum.totalAmount) *
-        100
+    lastMonthAmt > 0
+      ? ((thisMonthAmt - lastMonthAmt) / lastMonthAmt) * 100
       : null;
 
   const bookingsChange =
@@ -147,7 +148,7 @@ export default async function AdminAnalyticsPage() {
     if (monthlyData[key]) {
       monthlyData[key].bookings += 1;
       if (["CONFIRMED", "COMPLETED", "IN_PROGRESS"].includes(b.status)) {
-        monthlyData[key].revenue += b.totalAmount;
+        monthlyData[key].revenue += toNumber(b.totalAmount);
       }
     }
   }

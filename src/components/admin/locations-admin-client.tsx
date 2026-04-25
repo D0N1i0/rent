@@ -48,7 +48,7 @@ export function LocationsAdminClient({ locations: init }: { locations: Location[
   const handleEdit = (loc: Location) => {
     setForm({
       name: loc.name, city: loc.city, address: loc.address ?? "",
-      isAirport: loc.isAirport, pickupFee: loc.pickupFee, dropoffFee: loc.dropoffFee,
+      isAirport: loc.isAirport, pickupFee: Number(loc.pickupFee), dropoffFee: Number(loc.dropoffFee),
       isPickupPoint: loc.isPickupPoint, isDropoffPoint: loc.isDropoffPoint,
       isActive: loc.isActive, description: loc.description ?? "",
     });
@@ -150,8 +150,8 @@ export function LocationsAdminClient({ locations: init }: { locations: Location[
                   </div>
                 </td>
                 <td className="px-4 py-3.5 text-sm text-gray-600">{loc.city}</td>
-                <td className="px-4 py-3.5 text-sm text-gray-600">€{loc.pickupFee}</td>
-                <td className="px-4 py-3.5 text-sm text-gray-600">€{loc.dropoffFee}</td>
+                <td className="px-4 py-3.5 text-sm text-gray-600">€{Number(loc.pickupFee)}</td>
+                <td className="px-4 py-3.5 text-sm text-gray-600">€{Number(loc.dropoffFee)}</td>
                 <td className="px-4 py-3.5">
                   <div className="flex gap-1 flex-wrap">
                     {loc.isPickupPoint && <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Pickup</span>}

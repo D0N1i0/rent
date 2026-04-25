@@ -16,5 +16,5 @@ export default async function AdminSeasonalPricingPage() {
     }),
   ]);
 
-  return <SeasonalPricingAdminClient items={items} cars={cars} />;
+  return <SeasonalPricingAdminClient items={items as unknown as { id: string; carId: string; car: { name: string }; name: string; startDate: string | Date; endDate: string | Date; pricePerDay: number; pricePerWeek: number | null; isActive: boolean }[]} cars={cars} />;
 }

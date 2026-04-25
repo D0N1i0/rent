@@ -33,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Rate limit: 10 login attempts per 15 minutes per email address.
         // Keying on email (not IP) is more effective for credential stuffing —
         // attackers rotate IPs but stay on the same target email.
-        const rl = rateLimit(`login:${normalizedEmail}`, 10, 15 * 60 * 1000);
+        const rl = await rateLimit(`login:${normalizedEmail}`, 10, 15 * 60 * 1000);
         if (!rl.allowed) {
           // NextAuth swallows the error message; returning null shows a generic
           // "Invalid credentials" which is intentional (don't leak rate-limit state).

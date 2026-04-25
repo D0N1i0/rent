@@ -16,7 +16,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 10 cancel attempts per hour per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`cancel:${ip}`, 10, 60 * 60 * 1000);
+  const rl = await rateLimit(`cancel:${ip}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many requests. Please wait before trying again." }, { status: 429 });
   }

@@ -8,7 +8,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 export async function POST(req: NextRequest) {
   // Rate limit: 5 contact submissions per 30 minutes per IP
   const ip = getClientIp(req);
-  const rl = rateLimit(`contact:${ip}`, 5, 30 * 60 * 1000);
+  const rl = await rateLimit(`contact:${ip}`, 5, 30 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many submissions. Please wait before sending another message." },
