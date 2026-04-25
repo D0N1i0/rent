@@ -70,13 +70,14 @@ module.exports = withSentryConfig(nextConfig, {
   // Don't expose source maps in browser bundles
   hideSourceMaps: true,
 
-  // Remove Sentry logger statements from bundle
-  disableLogger: true,
-
   // Tunnel Sentry errors through /monitoring so they aren't blocked by ad blockers
   // and so we don't need to add *.ingest.sentry.io to our CSP.
   tunnelRoute: "/monitoring",
 
-  // We're not using Vercel Cron Monitoring
-  automaticVercelMonitors: false,
+  webpack: {
+    // Remove Sentry logger debug statements from the bundle (replaces deprecated disableLogger)
+    treeshake: { removeDebugLogging: true },
+    // We're not using Vercel Cron Monitoring (replaces deprecated automaticVercelMonitors)
+    automaticVercelMonitors: false,
+  },
 });

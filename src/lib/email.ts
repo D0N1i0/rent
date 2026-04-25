@@ -371,6 +371,63 @@ export async function sendEmailVerificationEmail(
   });
 }
 
+export async function sendRefundEmail(
+  email: string,
+  data: {
+    bookingRef: string;
+    customerFirstName: string;
+    amount: number;
+    isFullRefund: boolean;
+    reason: string;
+  }
+): Promise<void> {
+  const biz = await getEmailBizInfo();
+
+  const safeRef = escapeHtml(data.bookingRef);
+  const safeName = escapeHtml(data.customerFirstName);
+  const safeReason = escapeHtml(data.reason);
+
+  await sendMail({
+    to: email,
+    subject: `Refund Processed — ${data.bookingRef} | ${biz.businessName}`,
+    html: htmlWrapper(`
+      <div style="background:#fef3c7;border-left:4px solid #d97706;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+        <p style="color:#92400e;font-weight:bold;font-size:18px;margin:0;">Refund Processed</p>
+      </div>
+      <p style="color:#374151;">Hi ${safeName},</p>
+      <p style="color:#374151;">We have processed a ${data.isFullRefund ? "full" : "partial"} refund for your booking <strong>${safeRef}</strong>.</p>
+
+      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Booking Reference:</td>
+            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Refund Amount:</td>
+            <td style="padding:8px 0;font-weight:bold;font-size:20px;color:#d97706;border-top:1px solid #e4e4e7;">&#8364;${data.amount.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Type:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${data.isFullRefund ? "Full refund" : "Partial refund"}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Reason:</td>
+            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;font-style:italic;">${safeReason}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color:#374151;font-size:14px;">The refund will appear on your original payment method within <strong>5–10 business days</strong>, depending on your bank.</p>
+
+      <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
+        <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Questions?</p>
+        <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+      </div>
+    `, biz),
+  });
+}
+
 export async function sendAdminNewBookingEmail(
   adminEmail: string,
   booking: {

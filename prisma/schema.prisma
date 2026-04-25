@@ -101,6 +101,7 @@ model User {
   activityLogs     ActivityLog[]
   bookingStatusHistory BookingStatusHistory[]
   feedback         Feedback[]
+  initiatedRefunds RefundRecord[]
 
   @@index([email])
   @@index([phone])
@@ -367,6 +368,9 @@ model Booking {
   // Stripe payment tracking
   stripePaymentIntentId String?   @unique
   stripeClientSecret    String?
+  amountRefunded        Decimal   @default(0) @db.Decimal(10, 2)
+
+  refunds               RefundRecord[]
 
   // Lifecycle timestamps
   confirmedAt       DateTime?
@@ -627,6 +631,24 @@ model ActivityLog {
   @@index([entity, entityId])
   @@index([createdAt])
   @@map("activity_logs")
+}
+
+// ─── REFUNDS ─────────────────────────────────────────────────────────────────
+
+model RefundRecord {
+  id             String   @id @default(cuid())
+  bookingId      String
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  stripeRefundId String   @unique  // re_xxx — unique enforces at-most-once storage
+  amount         Decimal  @db.Decimal(10, 2)
+  reason         String
+  status         String   @default("SUCCEEDED") // SUCCEEDED | FAILED | PENDING
+  initiatedById  String?
+  initiatedBy    User?    @relation(fields: [initiatedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  @@index([bookingId])
+  @@map("refund_records")
 }
 
 // ─── WEBHOOK IDEMPOTENCY ──────────────────────────────────────────────────────

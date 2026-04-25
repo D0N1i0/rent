@@ -6,6 +6,8 @@ import Link from "next/link";
 import { formatCurrency, formatDateTime, getStatusColor, getPaymentStatusColor } from "@/lib/utils";
 import { BookingActionButtons } from "@/components/admin/booking-action-buttons";
 import { BookingNotesEditor } from "@/components/admin/booking-notes-editor";
+import { RefundPanel } from "@/components/admin/refund-panel";
+import { toNumber } from "@/lib/money";
 import { Car, MapPin, Calendar, User, CreditCard, ChevronLeft, Clock, AlertTriangle, Receipt } from "lucide-react";
 
 export default async function AdminBookingDetailPage({
@@ -29,6 +31,10 @@ export default async function AdminBookingDetailPage({
           changedBy: { select: { firstName: true, lastName: true, email: true } },
         },
         orderBy: { createdAt: "asc" },
+      },
+      refunds: {
+        include: { initiatedBy: { select: { firstName: true, lastName: true } } },
+        orderBy: { createdAt: "desc" },
       },
     },
   });
@@ -401,6 +407,25 @@ export default async function AdminBookingDetailPage({
           )}
         </div>
       )}
+
+      {/* Refund panel — always rendered; internally shows/hides controls based on eligibility */}
+      <RefundPanel
+        bookingId={booking.id}
+        bookingRef={booking.bookingRef}
+        totalAmount={toNumber(booking.totalAmount)}
+        amountRefunded={toNumber(booking.amountRefunded)}
+        paymentStatus={booking.paymentStatus}
+        hasStripePayment={!!booking.stripePaymentIntentId}
+        existingRefunds={booking.refunds.map((r) => ({
+          id: r.id,
+          stripeRefundId: r.stripeRefundId,
+          amount: toNumber(r.amount),
+          reason: r.reason,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          initiatedBy: r.initiatedBy,
+        }))}
+      />
 
       {/* Status history */}
       {booking.statusHistory.length > 0 && (
