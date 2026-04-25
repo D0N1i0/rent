@@ -3,14 +3,27 @@ import { Tag } from "lucide-react";
 import type { Offer } from "@prisma/client";
 import { formatDate } from "@/lib/utils";
 
-export function OffersSection({ offers, content }: { offers: Offer[]; content?: Record<string, string> }) {
+export function OffersSection({
+  offers,
+  content,
+  locale = "en",
+}: {
+  offers: Offer[];
+  content?: Record<string, string>;
+  locale?: "en" | "al";
+}) {
   if (!offers.length) return null;
+  const isAl = locale === "al";
   return (
     <section className="py-20 bg-white">
       <div className="page-container">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="section-heading">{content?.offers_title ?? "Current Offers & Promotions"}</h2>
-          <p className="section-subheading mt-4">Limited time deals and exclusive discounts for smart travellers.</p>
+          <h2 className="section-heading">{content?.offers_title ?? (isAl ? "Ofertat & Promovimet Aktuale" : "Current Offers & Promotions")}</h2>
+          <p className="section-subheading mt-4">
+            {isAl
+              ? "Oferta me kohë të kufizuar dhe zbritje ekskluzive për udhëtarët e mençur."
+              : "Limited time deals and exclusive discounts for smart travellers."}
+          </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {offers.map((offer) => (
@@ -24,7 +37,7 @@ export function OffersSection({ offers, content }: { offers: Offer[]; content?: 
               )}
               {offer.code && (
                 <div className="inline-flex items-center gap-2 bg-white border border-crimson-200 rounded-lg px-3 py-1.5">
-                  <span className="text-xs text-gray-500">Code:</span>
+                  <span className="text-xs text-gray-500">{isAl ? "Kodi:" : "Code:"}</span>
                   <span className="font-mono font-bold text-crimson-600 text-sm">{offer.code}</span>
                 </div>
               )}
@@ -34,7 +47,9 @@ export function OffersSection({ offers, content }: { offers: Offer[]; content?: 
                 </div>
               )}
               {offer.validUntil && (
-                <p className="text-xs text-gray-400 mt-2">Until {formatDate(offer.validUntil)}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {isAl ? "Deri më" : "Until"} {formatDate(offer.validUntil)}
+                </p>
               )}
             </div>
           ))}

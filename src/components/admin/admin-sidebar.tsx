@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Car, Calendar, Users, MapPin, Package, Tag, Star,
+  LayoutDashboard, Car, Calendar, CalendarDays, Users, MapPin, Package, Tag, Star,
   HelpCircle, Home, Settings, FileText, Image, Car as CarIcon,
   BarChart2, Activity, ChevronRight, Mail, Globe, MessageSquare, X
 } from "lucide-react";
@@ -41,6 +41,7 @@ export function AdminSidebar({
       label: locale === "al" ? "Operacionet" : "Operations",
       items: [
         { href: "/admin/bookings", label: locale === "al" ? "Rezervimet" : "Bookings", icon: Calendar },
+        { href: "/admin/availability-calendar", label: locale === "al" ? "Kalendari i Disponibilitetit" : "Availability Calendar", icon: CalendarDays },
         { href: "/admin/cars", label: locale === "al" ? "Flotila / Makinat" : "Fleet / Cars", icon: Car },
         { href: "/admin/categories", label: locale === "al" ? "Kategoritë" : "Categories", icon: BarChart2 },
         { href: "/admin/users", label: locale === "al" ? "Përdoruesit" : "Users", icon: Users },

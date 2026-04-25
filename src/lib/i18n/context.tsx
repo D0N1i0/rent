@@ -38,6 +38,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem(STORAGE_KEY, newLocale);
+    // Also persist in a cookie so server components can read the preference
+    // without a round-trip. 1 year TTL; SameSite=Lax is safe for same-origin.
+    document.cookie = `${STORAGE_KEY}=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
     // Update <html lang=""> attribute for accessibility
     document.documentElement.lang = newLocale === "al" ? "sq" : "en";
   }, []);

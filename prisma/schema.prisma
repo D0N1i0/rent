@@ -482,9 +482,11 @@ model FaqItem {
   question   String
   answer     String
   category   String? @default("general")
+  language   String  @default("en")
   isActive   Boolean @default(true)
   sortOrder  Int     @default(0)
 
+  @@index([language, isActive])
   @@map("faq_items")
 }
 

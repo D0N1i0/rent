@@ -11,8 +11,9 @@ import { OffersSection } from "@/components/home/offers-section";
 import { FaqPreview } from "@/components/home/faq-preview";
 import { ContactCta } from "@/components/home/contact-cta";
 import { getPublicSettings } from "@/lib/settings";
+import { getServerLocale } from "@/lib/i18n/server";
 
-async function getHomeData() {
+async function getHomeData(locale: "en" | "al") {
   const [featuredCars, testimonials, offers, faqItems, locations, homepageSettings, settings, activeCarCount] = await Promise.all([
     prisma.car.findMany({
       where: { isFeatured: true, isActive: true },
@@ -29,15 +30,33 @@ async function getHomeData() {
     }),
     prisma.testimonial.findMany({ where: { isActive: true, isFeatured: true }, orderBy: { sortOrder: "asc" }, take: 6 }),
     prisma.offer.findMany({ where: { isActive: true, OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }] }, orderBy: { sortOrder: "asc" }, take: 4 }),
-    prisma.faqItem.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, take: 6 }),
+    // Fetch FAQ items for the active locale (fall back to "en" items if no AL items exist)
+    prisma.faqItem.findMany({ where: { isActive: true, language: locale }, orderBy: { sortOrder: "asc" }, take: 6 }),
     prisma.location.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.siteSetting.findMany({ where: { group: "homepage" } }),
     getPublicSettings(),
     prisma.car.count({ where: { isActive: true } }),
   ]);
 
-  const homepageContent = Object.fromEntries(homepageSettings.map((item) => [item.key, item.value]));
-  return { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings, activeCarCount };
+  // Build a locale-aware content map.
+  // Base keys are stored without suffix (e.g. why_title).
+  // Albanian overrides are stored with _al suffix (e.g. why_title_al).
+  // If locale is "al" and an _al key exists, it wins over the base key.
+  const rawContent = Object.fromEntries(homepageSettings.map((item) => [item.key, item.value]));
+  const homepageContent: Record<string, string> = {};
+  for (const [key, value] of Object.entries(rawContent)) {
+    if (!key.endsWith("_al")) {
+      // Apply _al override when locale matches
+      homepageContent[key] = (locale === "al" && rawContent[`${key}_al`]) ? rawContent[`${key}_al`] : value;
+    }
+  }
+
+  // If no FAQ items found for the locale, fall back to English
+  const resolvedFaqItems = faqItems.length > 0
+    ? faqItems
+    : await prisma.faqItem.findMany({ where: { isActive: true, language: "en" }, orderBy: { sortOrder: "asc" }, take: 6 });
+
+  return { featuredCars, testimonials, offers, faqItems: resolvedFaqItems, locations, homepageContent, settings, activeCarCount };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -55,7 +74,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings, activeCarCount } = await getHomeData();
+  const locale = await getServerLocale();
+  const { featuredCars, testimonials, offers, faqItems, locations, homepageContent, settings, activeCarCount } = await getHomeData(locale);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -105,12 +125,12 @@ export default async function HomePage() {
       <HeroSection locations={locations} content={homepageContent} settings={settings} activeCarCount={activeCarCount} />
       <FeaturedCars cars={featuredCars as unknown as import("@/components/cars/car-card").CarCardData[]} content={homepageContent} />
       <WhyChooseUs content={homepageContent} />
-      <HowItWorks content={homepageContent} />
-      {offers.length > 0 && <OffersSection offers={offers} content={homepageContent} />}
-      <AirportSection content={homepageContent} settings={settings} />
-      <TestimonialsSection testimonials={testimonials} content={homepageContent} />
+      <HowItWorks content={homepageContent} locale={locale} />
+      {offers.length > 0 && <OffersSection offers={offers} content={homepageContent} locale={locale} />}
+      <AirportSection content={homepageContent} settings={settings} locale={locale} />
+      <TestimonialsSection testimonials={testimonials} content={homepageContent} locale={locale} />
       <FaqPreview items={faqItems} />
-      <ContactCta content={homepageContent} settings={settings} />
+      <ContactCta content={homepageContent} settings={settings} locale={locale} />
     </>
   );
 }

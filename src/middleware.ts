@@ -1,8 +1,10 @@
 // src/middleware.ts
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
 import { NextResponse } from "next/server";
 
-const ADMIN_ROUTES = ["/admin"];
+const { auth } = NextAuth(authConfig);
+
 const CUSTOMER_ROUTES = ["/dashboard", "/profile", "/my-bookings"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password"];
 

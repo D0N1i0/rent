@@ -5,11 +5,13 @@ const icons = [Search, CalendarCheck, MapPin, Key];
 
 interface HowItWorksProps {
   content: Record<string, string>;
+  locale?: "en" | "al";
 }
 
-export function HowItWorks({ content }: HowItWorksProps) {
-  const title = content.how_title || "How It Works";
-  const subtitle = content.how_subtitle || "Renting a car with AutoKos is simple, fast, and stress-free.";
+export function HowItWorks({ content, locale = "en" }: HowItWorksProps) {
+  const isAl = locale === "al";
+  const title = content.how_title || (isAl ? "Si Funksionon" : "How It Works");
+  const subtitle = content.how_subtitle || (isAl ? "Marrja e makinës me AutoKos është e thjeshtë, e shpejtë dhe pa stres." : "Renting a car with AutoKos is simple, fast, and stress-free.");
 
   const steps = [1, 2, 3, 4].map((i) => ({
     icon: icons[i - 1],
@@ -36,7 +38,9 @@ export function HowItWorks({ content }: HowItWorksProps) {
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 border border-white/20 mb-5">
                 <step.icon className="h-7 w-7 text-crimson-400" />
               </div>
-              <div className="text-xs font-bold text-crimson-400 mb-2 tracking-widest uppercase">Step {step.step}</div>
+              <div className="text-xs font-bold text-crimson-400 mb-2 tracking-widest uppercase">
+                {isAl ? "Hapi" : "Step"} {step.step}
+              </div>
               <h3 className="font-bold text-white text-lg mb-2">{step.title}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
             </div>

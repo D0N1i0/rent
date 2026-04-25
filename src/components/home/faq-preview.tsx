@@ -5,19 +5,29 @@ import { useState } from "react";
 import { ChevronDown, ArrowRight } from "lucide-react";
 import type { FaqItem } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n/context";
 
 export function FaqPreview({ items }: { items: FaqItem[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const { locale } = useLanguage();
+  const isAl = locale === "al";
+
   if (!items.length) return null;
   return (
     <section className="py-20 bg-white">
       <div className="page-container">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <div>
-            <h2 className="section-heading mb-4">Frequently Asked Questions</h2>
-            <p className="section-subheading mb-6">Everything you need to know about renting a car with AutoKos.</p>
+            <h2 className="section-heading mb-4">
+              {isAl ? "Pyetje të Shpeshta" : "Frequently Asked Questions"}
+            </h2>
+            <p className="section-subheading mb-6">
+              {isAl
+                ? "Gjithçka që duhet të dini rreth qirasë së makinës me AutoKos."
+                : "Everything you need to know about renting a car with AutoKos."}
+            </p>
             <Link href="/faq" className="btn-secondary inline-flex items-center gap-2 text-sm">
-              View All FAQs <ArrowRight className="h-4 w-4" />
+              {isAl ? "Shiko Të Gjitha Pyetjet" : "View All FAQs"} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="space-y-2">

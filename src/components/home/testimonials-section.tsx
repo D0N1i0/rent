@@ -2,14 +2,27 @@
 import { Star } from "lucide-react";
 import type { Testimonial } from "@prisma/client";
 
-export function TestimonialsSection({ testimonials, content }: { testimonials: Testimonial[]; content?: Record<string, string> }) {
+export function TestimonialsSection({
+  testimonials,
+  content,
+  locale = "en",
+}: {
+  testimonials: Testimonial[];
+  content?: Record<string, string>;
+  locale?: "en" | "al";
+}) {
   if (!testimonials.length) return null;
+  const isAl = locale === "al";
   return (
     <section className="py-20 bg-gray-50">
       <div className="page-container">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="section-heading">{content?.testimonials_title ?? "What Our Customers Say"}</h2>
-          <p className="section-subheading mt-4">Real reviews from real customers who've driven with AutoKos.</p>
+          <h2 className="section-heading">{content?.testimonials_title ?? (isAl ? "Çfarë Thonë Klientët Tanë" : "What Our Customers Say")}</h2>
+          <p className="section-subheading mt-4">
+            {isAl
+              ? "Vlerësime reale nga klientë realë që kanë udhëtuar me AutoKos."
+              : "Real reviews from real customers who've driven with AutoKos."}
+          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {testimonials.map((t) => (

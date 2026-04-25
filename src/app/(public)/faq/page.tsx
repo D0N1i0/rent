@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { FaqPageClient } from "@/components/pages/faq-page-client";
 import type { Metadata } from "next";
 import { getPublicSettings } from "@/lib/settings";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await prisma.seoMetadata.findUnique({ where: { page: "faq" } });
@@ -20,10 +21,20 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function FaqPage() {
-  const items = await prisma.faqItem.findMany({
-    where: { isActive: true },
+  const locale = await getServerLocale();
+
+  let items = await prisma.faqItem.findMany({
+    where: { isActive: true, language: locale },
     orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
   });
+
+  // Fall back to English if no items exist for the locale
+  if (items.length === 0) {
+    items = await prisma.faqItem.findMany({
+      where: { isActive: true, language: "en" },
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+    });
+  }
 
   const categories = [...new Set(items.map(i => i.category).filter(Boolean))] as string[];
   const settings = await getPublicSettings();

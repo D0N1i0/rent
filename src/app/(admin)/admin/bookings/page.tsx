@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { BookingStatus } from "@prisma/client";
 import Link from "next/link";
-import { Eye, Calendar, Search } from "lucide-react";
+import { Eye, Calendar, Search, Plus } from "lucide-react";
 import { formatCurrency, formatDate, getStatusColor, getPaymentStatusColor } from "@/lib/utils";
 import { BookingStatusFilter } from "@/components/admin/booking-status-filter";
 
@@ -71,6 +71,10 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
             {total} booking{total !== 1 ? "s" : ""}{search ? ` matching "${search}"` : ""}
           </p>
         </div>
+        <Link href="/admin/bookings/new" className="btn-primary inline-flex items-center gap-2 text-sm px-4 py-2">
+          <Plus className="h-4 w-4" />
+          New Booking
+        </Link>
       </div>
 
       {/* Search bar */}
