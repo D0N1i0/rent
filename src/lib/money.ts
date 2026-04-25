@@ -29,6 +29,7 @@ export function toNumberOrNull(
 export function serializeDecimals<T>(obj: T): T {
   if (obj == null) return obj;
   if (obj instanceof Prisma.Decimal) return obj.toNumber() as unknown as T;
+  if (obj instanceof Date) return obj;
   if (Array.isArray(obj)) return obj.map(serializeDecimals) as unknown as T;
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};

@@ -18,7 +18,13 @@ export default async function DashboardPage() {
   const [bookings, statusCounts] = await Promise.all([
     prisma.booking.findMany({
       where: { userId: session.user.id },
-      include: {
+      select: {
+        id: true,
+        bookingRef: true,
+        status: true,
+        totalAmount: true,
+        durationDays: true,
+        pickupDateTime: true,
         car: { select: { name: true, brand: true } },
         pickupLocation: { select: { name: true } },
       },

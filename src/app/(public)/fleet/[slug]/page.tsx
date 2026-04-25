@@ -34,13 +34,13 @@ export default async function CarDetailPage({ params, searchParams }: Props) {
         category: true,
       },
     }),
-    prisma.extra.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.location.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.extra.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }).catch(() => []),
+    prisma.location.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }).catch(() => []),
     prisma.car.findMany({
       where: { isActive: true, slug: { not: slug } },
       include: { images: { where: { isPrimary: true } }, category: true },
       take: 3,
-    }),
+    }).catch(() => []),
   ]);
 
   if (!car) notFound();

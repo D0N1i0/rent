@@ -24,24 +24,36 @@ export function formatCurrency(amount: number | string | { toNumber(): number },
   })}`;
 }
 
-export function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: BUSINESS_TIMEZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
+export function formatDate(date: Date | string | null | undefined): string {
+  try {
+    const d = new Date(date as Date | string);
+    if (isNaN(d.getTime())) return "—";
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: BUSINESS_TIMEZONE,
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return "—";
+  }
 }
 
-export function formatDateTime(date: Date | string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: BUSINESS_TIMEZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
+export function formatDateTime(date: Date | string | null | undefined): string {
+  try {
+    const d = new Date(date as Date | string);
+    if (isNaN(d.getTime())) return "—";
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: BUSINESS_TIMEZONE,
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  } catch {
+    return "—";
+  }
 }
 
 export function calculateRentalDays(pickupDT: Date, returnDT: Date): number {

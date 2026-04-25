@@ -42,7 +42,17 @@ export default async function AdminBookingsPage({ searchParams }: Props) {
   const [bookings, total] = await Promise.all([
     prisma.booking.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        bookingRef: true,
+        guestFirstName: true,
+        guestLastName: true,
+        guestEmail: true,
+        status: true,
+        paymentStatus: true,
+        totalAmount: true,
+        durationDays: true,
+        pickupDateTime: true,
         car: { select: { name: true, brand: true } },
         pickupLocation: { select: { name: true } },
         dropoffLocation: { select: { name: true } },

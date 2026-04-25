@@ -11,14 +11,21 @@ export default async function CustomerBookingsPage() {
 
   const bookings = await prisma.booking.findMany({
     where: { userId: session.user.id },
-    include: {
-      car: { include: { images: { where: { isPrimary: true } }, category: true } },
+    select: {
+      id: true,
+      bookingRef: true,
+      status: true,
+      paymentStatus: true,
+      totalAmount: true,
+      durationDays: true,
+      pickupDateTime: true,
+      dropoffDateTime: true,
+      car: { select: { name: true, brand: true, model: true, images: { where: { isPrimary: true }, select: { url: true, alt: true } } } },
       pickupLocation: { select: { name: true } },
       dropoffLocation: { select: { name: true } },
-      extras: true,
     },
     orderBy: { createdAt: "desc" },
-  });
+  }).catch(() => []);
 
   return <BookingsListClient bookings={bookings as unknown as { id: string; bookingRef: string; status: string; paymentStatus: string; totalAmount: number; durationDays: number; pickupDateTime: Date; dropoffDateTime: Date; car: { name: string }; pickupLocation: { name: string } }[]} />;
 }

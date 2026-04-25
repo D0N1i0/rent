@@ -34,7 +34,13 @@ export default async function AdminDashboardPage() {
     prisma.car.count({ where: { isActive: true } }),
     prisma.user.count({ where: { role: "CUSTOMER" } }),
     prisma.booking.findMany({
-      include: {
+      select: {
+        id: true,
+        guestFirstName: true,
+        guestLastName: true,
+        status: true,
+        totalAmount: true,
+        createdAt: true,
         car: { select: { name: true } },
         pickupLocation: { select: { name: true } },
       },

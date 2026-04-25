@@ -12,6 +12,7 @@ const globalForPrisma = globalThis as unknown as {
 function decimalToNumber(data: unknown): unknown {
   if (data == null) return data;
   if (data instanceof Prisma.Decimal) return data.toNumber();
+  if (data instanceof Date) return data;
   if (Array.isArray(data)) return data.map(decimalToNumber);
   if (typeof data === "object") {
     const out: Record<string, unknown> = {};
