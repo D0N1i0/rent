@@ -17,6 +17,8 @@ import {
   closeAbandonedPendingBookings,
   getDurationDays,
 } from "@/lib/booking-rules";
+import { normalizePhone } from "@/lib/phone";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 
 const MAX_REF_RETRIES = 5;
 
@@ -25,6 +27,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user || !isAdminRole(getSessionRole(session))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  const rl = await checkAdminRateLimit(req, session.user.id, "manual-booking");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const adminId = session.user.id ?? null;
 
@@ -141,6 +146,13 @@ export async function POST(req: NextRequest) {
   // ── Full price breakdown ────────────────────────────────────────────────────
   const breakdown = buildPriceBreakdown(car, pickupDT, returnDT, pickupLoc, dropoffLoc, extraLineItems, couponDiscount);
 
+  // ── Normalize guest phone to E.164 ─────────────────────────────────────────
+  const phoneResult = normalizePhone(data.phone);
+  if (!phoneResult.ok) {
+    return NextResponse.json({ error: "Invalid phone number. Please include the country code (e.g. +383 44 123 456)." }, { status: 400 });
+  }
+  const guestPhoneE164 = phoneResult.e164;
+
   // ── Resolve userId ──────────────────────────────────────────────────────────
   const linkedUserId = data.userId?.trim() || null;
   if (linkedUserId) {
@@ -191,7 +203,7 @@ export async function POST(req: NextRequest) {
             guestFirstName: data.firstName.trim(),
             guestLastName: data.lastName.trim(),
             guestEmail: data.email.toLowerCase().trim(),
-            guestPhone: data.phone.trim(),
+            guestPhone: guestPhoneE164,
             guestIdNumber: data.idNumber?.trim() ?? null,
             guestLicense: data.licenseNumber?.trim() ?? null,
             guestNationality: data.nationality?.trim() ?? null,

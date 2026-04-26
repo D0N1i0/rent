@@ -11,7 +11,12 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // Next.js RSC and inline styles require unsafe-inline; Stripe.js must load from js.stripe.com
+      // 'unsafe-inline': required by Next.js App Router for inline script bootstrapping (RSC payloads).
+      // 'unsafe-eval':  required by Webpack 5 chunk loader (new Function()) and Sentry tracing
+      //                 (stack-frame parsing). Cannot be removed until:
+      //                 (a) Next.js ships stable nonce-based CSP support for App Router, AND
+      //                 (b) @sentry/nextjs drops its new Function() usage in the browser SDK.
+      //                 Track: https://github.com/vercel/next.js/issues/42454
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' js.stripe.com",
       // Stripe Elements iframe
       "frame-src js.stripe.com hooks.stripe.com",

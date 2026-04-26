@@ -1,6 +1,7 @@
-import { z } from "zod";
 // src/lib/validations/booking.ts
+import { z } from "zod";
 import { buildBookingDateTimes, validateBookingWindow } from "@/lib/booking-rules";
+import { isValidPhone } from "@/lib/phone";
 
 export const bookingSchema = z
   .object({
@@ -26,7 +27,7 @@ export const bookingSchema = z
       .string()
       .min(7, "Phone number must be at least 7 characters")
       .max(25)
-      .regex(/^\+?\d[\d\s\-\(\)]{5,}$/, "Invalid phone number format"),
+      .refine((v) => isValidPhone(v), "Enter a valid phone number with country code (e.g. +383 44 123 456)"),
     idNumber: z.string().min(3, "ID/Passport number is required").max(50),
     licenseNumber: z.string().min(3, "Driving licence number is required").max(50),
     nationality: z.string().max(80).optional().or(z.literal("")),

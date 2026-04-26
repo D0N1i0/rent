@@ -4,8 +4,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is only needed when DATABASE_URL points to a PgBouncer / Supabase
+  // transaction-mode pooler. Prisma's migration engine requires a direct connection
+  // that bypasses the pooler. Set DIRECT_URL to the non-pooled connection string.
+  // If you are NOT using a pooler (plain Postgres, Neon serverless URL), leave
+  // DIRECT_URL unset in .env — Prisma accepts env() returning undefined here.
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
