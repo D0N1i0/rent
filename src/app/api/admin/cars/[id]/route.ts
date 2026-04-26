@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { carSchema } from "@/lib/validations/booking";
 import { slugify } from "@/lib/utils";
 
@@ -29,6 +30,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     const body = await req.json();
@@ -111,6 +114,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     const body = await req.json();
@@ -133,6 +138,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     const activeBookings = await prisma.booking.count({
@@ -173,6 +180,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const car = await prisma.car.findUnique({
     where: { id },

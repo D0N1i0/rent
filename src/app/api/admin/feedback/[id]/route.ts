@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isAdminRole, getSessionRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 async function requireAdmin() {
@@ -20,6 +21,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     const body = await req.json();
@@ -48,6 +51,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     await prisma.feedback.delete({ where: { id } });
@@ -62,6 +67,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const feedback = await prisma.feedback.findUnique({
     where: { id },

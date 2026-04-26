@@ -4,7 +4,6 @@ import { optionalPhoneSchema } from "@/lib/validations/phone";
 
 // ─── Shared field validators ──────────────────────────────────────────────────
 
-
 /** DOB: must be at least 18 years ago from now. */
 function isAtLeast18(dateStr: string): boolean {
   const dob = new Date(dateStr);

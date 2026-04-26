@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { carSchema } from "@/lib/validations/booking";
 import { slugify } from "@/lib/utils";
 
@@ -27,6 +28,8 @@ async function createUniqueSlug(base: string) {
 export async function POST(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     const body = await req.json();

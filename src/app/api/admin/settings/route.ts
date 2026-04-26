@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 
 // Settings are ADMIN-only — STAFF must not be able to change site-wide config.
 async function requireAdmin() {
@@ -12,6 +13,8 @@ async function requireAdmin() {
 export async function PUT(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   try {
     const { settings } = await req.json();

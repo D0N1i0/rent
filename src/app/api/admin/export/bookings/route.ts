@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isAdminRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { format } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
@@ -35,6 +36,9 @@ export async function GET(req: NextRequest) {
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  const rl = await checkAdminRateLimit(req, session.user.id, "export");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");

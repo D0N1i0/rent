@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import Script from "next/script";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SupportWidget } from "@/components/layout/support-widget";
@@ -42,8 +43,52 @@ export default async function PublicLayout({ children }: { children: React.React
       .catch(() => []),
   ]);
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://autokos.com";
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": ["LocalBusiness", "CarRental"],
+    name: settings.businessName,
+    description: settings.businessDescription,
+    url: appUrl,
+    telephone: settings.phone,
+    email: settings.supportEmail,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: settings.address,
+      addressLocality: "Prishtinë",
+      addressRegion: "Prishtinë",
+      addressCountry: "XK",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: "42.6629",
+      longitude: "21.1655",
+    },
+    areaServed: {
+      "@type": "Country",
+      name: "Kosovo",
+    },
+    priceRange: "€€",
+    openingHoursSpecification: {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+      opens: "08:00",
+      closes: "20:00",
+    },
+    sameAs: [
+      settings.facebookUrl,
+      settings.instagramUrl,
+    ].filter(Boolean),
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
+      <Script
+        id="local-business-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+      />
       <SiteHeader settings={settings} />
       <main className="flex-1">{children}</main>
       <SiteFooter settings={settings} categories={categories} />

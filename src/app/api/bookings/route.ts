@@ -9,6 +9,7 @@ import { buildPriceBreakdown, buildExtraLineItems } from "@/lib/pricing";
 import { sendBookingConfirmationEmail, sendAdminNewBookingEmail } from "@/lib/email";
 import { toNumber } from "@/lib/money";
 import { bookingConflictStatusFilter, buildBookingDateTimes, calculateOfferDiscount, closeAbandonedPendingBookings, validateBookingWindow, getDurationDays } from "@/lib/booking-rules";
+import { normalizePhone } from "@/lib/phone";
 
 const MAX_REF_RETRIES = 5;
 
@@ -140,6 +141,13 @@ export async function POST(req: NextRequest) {
     // ── 9. Build full price breakdown via pricing service ─────────────────────
     const breakdown = buildPriceBreakdown(car, pickupDT, returnDT, pickupLoc, dropoffLoc, extraLineItems, couponDiscount);
 
+    // ── 9b. Normalize guest phone to E.164 ────────────────────────────────────
+    const phoneResult = normalizePhone(data.phone);
+    if (!phoneResult.ok) {
+      return NextResponse.json({ error: "Invalid phone number. Please include your country code (e.g. +383 44 123 456)." }, { status: 400 });
+    }
+    const guestPhoneE164 = phoneResult.e164;
+
     // ── 10. Get user session ──────────────────────────────────────────────────
     const session = await auth();
     const userId = session?.user?.id ?? null;
@@ -197,7 +205,7 @@ export async function POST(req: NextRequest) {
               guestFirstName: data.firstName.trim(),
               guestLastName: data.lastName.trim(),
               guestEmail: data.email.toLowerCase().trim(),
-              guestPhone: data.phone.trim(),
+              guestPhone: guestPhoneE164,
               guestIdNumber: data.idNumber?.trim() ?? null,
               guestLicense: data.licenseNumber?.trim() ?? null,
               guestNationality: data.nationality?.trim() ?? null,
@@ -250,10 +258,9 @@ export async function POST(req: NextRequest) {
                 lastName: data.lastName.trim(),
               };
 
-              const phone = data.phone.trim();
-              if (phone) {
-                const phoneConflict = await tx.user.findFirst({ where: { phone, id: { not: userId } } });
-                if (!phoneConflict) profileUpdate.phone = phone;
+              if (guestPhoneE164) {
+                const phoneConflict = await tx.user.findFirst({ where: { phone: guestPhoneE164, id: { not: userId } }, select: { id: true } });
+                if (!phoneConflict) profileUpdate.phone = guestPhoneE164;
               }
 
               const idNum = data.idNumber?.trim();

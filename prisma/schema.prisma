@@ -4,8 +4,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is only needed when DATABASE_URL points to a PgBouncer / Supabase
+  // transaction-mode pooler. Prisma's migration engine requires a direct connection
+  // that bypasses the pooler. Set DIRECT_URL to the non-pooled connection string.
+  // If you are NOT using a pooler (plain Postgres, Neon serverless URL), leave
+  // DIRECT_URL unset in .env — Prisma accepts env() returning undefined here.
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -226,6 +232,7 @@ model Car {
   bookings          Booking[]
   availabilityBlocks AvailabilityBlock[]
   seasonalPricing   SeasonalPricing[]
+  maintenanceLogs   CarMaintenanceLog[]
 
   @@index([isActive, isFeatured])
   @@index([categoryId])
@@ -275,6 +282,28 @@ model AvailabilityBlock {
   @@map("availability_blocks")
 }
 
+model CarMaintenanceLog {
+  id              String   @id @default(cuid())
+  carId           String
+  car             Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  serviceDate     DateTime
+  maintenanceType String   // e.g. "Oil Change", "Tire Rotation", "Brake Inspection", "Annual Service"
+  description     String?
+  odometer        Int?     // km at service time
+  cost            Decimal? @db.Decimal(10, 2)
+  performedBy     String?  // workshop / mechanic name
+  nextServiceDate DateTime?
+  nextServiceKm   Int?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([carId])
+  @@index([carId, serviceDate])
+  @@map("car_maintenance_logs")
+}
+
 // ─── LOCATIONS ────────────────────────────────────────────────────────────────
 
 model Location {
@@ -302,14 +331,17 @@ model Location {
 // ─── EXTRAS ───────────────────────────────────────────────────────────────────
 
 model Extra {
-  id          String           @id @default(cuid())
-  name        String
-  description String?
-  iconUrl     String?
-  pricingType ExtraPricingType @default(PER_DAY)
-  price       Decimal          @db.Decimal(10, 2)
-  isActive    Boolean          @default(true)
-  sortOrder   Int              @default(0)
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
+  iconUrl          String?
+  pricingType      ExtraPricingType @default(PER_DAY)
+  price            Decimal          @db.Decimal(10, 2)
+  isActive         Boolean          @default(true)
+  sortOrder        Int              @default(0)
+  // "protection" extras are shown as insurance/protection tiers in the booking form.
+  // Values: null (regular extra) | "BASIC" | "CDW" | "PREMIUM"
+  protectionCategory String?
 
   bookingExtras BookingExtra[]
 

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
@@ -34,6 +35,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await ensureAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) {

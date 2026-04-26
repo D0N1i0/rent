@@ -21,12 +21,23 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: "AutoKos — Premium Car Rental Kosovo",
+    default: "AutoKos — Makina me Qira Kosovo | Car Rental Kosovo",
     template: "%s | AutoKos Kosovo",
   },
   description:
-    "Kosovo's most trusted car rental. Modern fleet, airport pickup, transparent pricing. Book online in minutes.",
-  keywords: ["car rental Kosovo", "rent a car Prishtina", "car hire Kosovo airport"],
+    "Kosovo's most trusted car rental — Vetura me qira Prishtinë. Modern fleet, airport pickup, transparent pricing. Book online in minutes.",
+  keywords: [
+    "car rental Kosovo",
+    "rent a car Prishtina",
+    "car hire Kosovo airport",
+    "makina me qira Kosovë",
+    "makina me qira Prishtinë",
+    "vetura me qira Kosovë",
+    "vetura me qira Prishtinë",
+    "rent a car Prishtina airport",
+    "qira vetura Kosovë",
+    "AutoKos",
+  ],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   icons: {
     icon: [
@@ -38,6 +49,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName: "AutoKos",
+    description: "Kosovo's most trusted car rental — Vetura me qira Prishtinë. Airport pickup, modern fleet, transparent pricing.",
   },
 };
 

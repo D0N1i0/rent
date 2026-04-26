@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { profileSchema, isAtLeast18 } from "@/lib/validations/auth";
+import { normalizeOptionalPhone } from "@/lib/phone";
 
 export async function GET() {
   const session = await auth();
@@ -41,10 +42,21 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Uniqueness checks — only check if value is non-empty and belongs to another user
+    // Normalize phone to E.164 before uniqueness check and write
+    let normalizedPhone: string | null = null;
     if (data.phone?.trim()) {
+      const phoneResult = normalizeOptionalPhone(data.phone);
+      if (phoneResult && !phoneResult.ok) {
+        return NextResponse.json({ error: "Invalid phone number. Please include your country code (e.g. +383 44 123 456)." }, { status: 400 });
+      }
+      normalizedPhone = phoneResult?.e164 ?? null;
+    }
+
+    // Uniqueness checks — only check if value is non-empty and belongs to another user
+    if (normalizedPhone) {
       const existing = await prisma.user.findFirst({
-        where: { phone: data.phone.trim(), id: { not: userId } },
+        where: { phone: normalizedPhone, id: { not: userId } },
+        select: { id: true },
       });
       if (existing) {
         return NextResponse.json({ error: "This phone number is already linked to another account." }, { status: 409 });
@@ -74,7 +86,7 @@ export async function PUT(req: NextRequest) {
       data: {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
-        phone: data.phone?.trim() || null,
+        phone: normalizedPhone,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         nationality: data.nationality?.trim() || null,
         idNumber: data.idNumber?.trim() || null,

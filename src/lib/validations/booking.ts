@@ -1,5 +1,5 @@
-import { z } from "zod";
 // src/lib/validations/booking.ts
+import { z } from "zod";
 import { buildBookingDateTimes, validateBookingWindow } from "@/lib/booking-window";
 import { optionalPhoneSchema, requiredPhoneSchema } from "@/lib/validations/phone";
 

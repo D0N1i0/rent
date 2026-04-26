@@ -3,6 +3,9 @@
 // Centralised email delivery. All email sends go through this module.
 // Non-blocking callers should .catch() and log — never await in request handlers
 // where a send failure would break the booking flow.
+//
+// Language support: user-facing functions accept an optional `language` param.
+// Pass "sq" for Albanian (Kosovo); default is "en" (English).
 
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
@@ -58,6 +61,12 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
+// ─── Language helper ──────────────────────────────────────────────────────────
+
+function isSq(language?: string) {
+  return language === "sq";
+}
+
 // ─── Dynamic business info (from SiteSettings) ────────────────────────────────
 
 interface EmailBizInfo {
@@ -94,9 +103,11 @@ async function getEmailBizInfo(): Promise<EmailBizInfo> {
 
 // ─── Base template ────────────────────────────────────────────────────────────
 
-function htmlWrapper(bodyHtml: string, biz: EmailBizInfo): string {
+function htmlWrapper(bodyHtml: string, biz: EmailBizInfo, language?: string): string {
+  const lang = isSq(language) ? "sq" : "en";
+  const tagline = isSq(language) ? "Marrje me qira veturash — Kosovë" : "Premium Car Rental Kosovo";
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -116,7 +127,7 @@ function htmlWrapper(bodyHtml: string, biz: EmailBizInfo): string {
               <td style="padding-left:12px;">
                 <span style="color:white;font-size:22px;font-weight:bold;font-family:Georgia,serif;">${escapeHtml(biz.businessName)}</span>
                 <br/>
-                <span style="color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Premium Car Rental Kosovo</span>
+                <span style="color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;">${tagline}</span>
               </td>
             </tr></table>
           </td>
@@ -145,30 +156,47 @@ function htmlWrapper(bodyHtml: string, biz: EmailBizInfo): string {
 export async function sendPasswordResetEmail(
   email: string,
   token: string,
-  firstName?: string | null
+  firstName?: string | null,
+  language?: string
 ): Promise<void> {
   const biz = await getEmailBizInfo();
   const resetUrl = `${biz.appUrl}/reset-password?token=${token}`;
-  const safeName = escapeHtml(firstName ?? "there");
+  const safeName = escapeHtml(firstName ?? (isSq(language) ? "ju" : "there"));
+  const sq = isSq(language);
 
-  await sendMail({
-    to: email,
-    subject: `Reset your ${biz.businessName} password`,
-    html: htmlWrapper(`
-      <h2 style="color:#0F1E3C;margin-top:0;">Password Reset Request</h2>
-      <p style="color:#374151;">Hi ${safeName},</p>
-      <p style="color:#374151;">We received a request to reset your ${escapeHtml(biz.businessName)} account password. Click the button below to create a new password:</p>
-      <div style="text-align:center;margin:32px 0;">
-        <a href="${escapeHtml(resetUrl)}" style="background:#E63B2E;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
-          Reset My Password
-        </a>
-      </div>
-      <p style="color:#6b7280;font-size:14px;">This link will expire in <strong>1 hour</strong>.</p>
-      <p style="color:#6b7280;font-size:14px;">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
-      <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
-      <p style="color:#9ca3af;font-size:12px;">If the button above doesn&apos;t work, copy this link: <br/><a href="${escapeHtml(resetUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(resetUrl)}</a></p>
-    `, biz),
-  });
+  const subject = sq
+    ? `Rivendosni fjalëkalimin tuaj — ${biz.businessName}`
+    : `Reset your ${biz.businessName} password`;
+
+  const bodyHtml = sq ? `
+    <h2 style="color:#0F1E3C;margin-top:0;">Kërkesë për rivendosje fjalëkalimi</h2>
+    <p style="color:#374151;">Mirëdita ${safeName},</p>
+    <p style="color:#374151;">Kemi marrë një kërkesë për rivendosjen e fjalëkalimit të llogarisë tuaj në ${escapeHtml(biz.businessName)}. Klikoni butonin më poshtë për të krijuar fjalëkalim të ri:</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${escapeHtml(resetUrl)}" style="background:#E63B2E;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
+        Rivendosni Fjalëkalimin
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:14px;">Ky link skadon brenda <strong>1 ore</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;">Nëse nuk keni kërkuar rivendosje të fjalëkalimit, mund ta injoroni këtë email me siguri. Fjalëkalimi juaj nuk do të ndryshojë.</p>
+    <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
+    <p style="color:#9ca3af;font-size:12px;">Nëse butoni nuk funksionon, kopjoni këtë link: <br/><a href="${escapeHtml(resetUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(resetUrl)}</a></p>
+  ` : `
+    <h2 style="color:#0F1E3C;margin-top:0;">Password Reset Request</h2>
+    <p style="color:#374151;">Hi ${safeName},</p>
+    <p style="color:#374151;">We received a request to reset your ${escapeHtml(biz.businessName)} account password. Click the button below to create a new password:</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${escapeHtml(resetUrl)}" style="background:#E63B2E;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
+        Reset My Password
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:14px;">This link will expire in <strong>1 hour</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
+    <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
+    <p style="color:#9ca3af;font-size:12px;">If the button above doesn&apos;t work, copy this link: <br/><a href="${escapeHtml(resetUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(resetUrl)}</a></p>
+  `;
+
+  await sendMail({ to: email, subject, html: htmlWrapper(bodyHtml, biz, language) });
 }
 
 export async function sendBookingConfirmationEmail(
@@ -183,11 +211,14 @@ export async function sendBookingConfirmationEmail(
     dropoffDateTime: Date;
     totalAmount: number;
     depositAmount: number;
-  }
+  },
+  language?: string
 ): Promise<void> {
   const biz = await getEmailBizInfo();
+  const sq = isSq(language);
 
-  const pickupStr = booking.pickupDateTime.toLocaleString("en-GB", {
+  const locale = sq ? "sq-AL" : "en-GB";
+  const pickupStr = booking.pickupDateTime.toLocaleString(locale, {
     timeZone: BUSINESS_TIMEZONE,
     weekday: "short",
     year: "numeric",
@@ -196,7 +227,7 @@ export async function sendBookingConfirmationEmail(
     hour: "2-digit",
     minute: "2-digit",
   });
-  const returnStr = booking.dropoffDateTime.toLocaleString("en-GB", {
+  const returnStr = booking.dropoffDateTime.toLocaleString(locale, {
     timeZone: BUSINESS_TIMEZONE,
     weekday: "short",
     year: "numeric",
@@ -212,65 +243,121 @@ export async function sendBookingConfirmationEmail(
   const safePickup = escapeHtml(booking.pickupLocation);
   const safeDropoff = escapeHtml(booking.dropoffLocation);
 
-  await sendMail({
-    to: email,
-    subject: `Booking Confirmed — ${booking.bookingRef} | ${biz.businessName}`,
-    html: htmlWrapper(`
-      <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
-        <p style="color:#166534;font-weight:bold;font-size:18px;margin:0;">&#10003; Booking Confirmed!</p>
-      </div>
-      <p style="color:#374151;">Hi ${safeName},</p>
-      <p style="color:#374151;">Your car rental booking has been confirmed. Here are your details:</p>
+  const subject = sq
+    ? `Rezervimi i konfirmuar — ${booking.bookingRef} | ${biz.businessName}`
+    : `Booking Confirmed — ${booking.bookingRef} | ${biz.businessName}`;
 
-      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Booking Reference:</td>
-            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Vehicle:</td>
-            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;border-top:1px solid #e4e4e7;">${safeCar}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Pickup:</td>
-            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safePickup}<br/><strong>${pickupStr}</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Return:</td>
-            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safeDropoff}<br/><strong>${returnStr}</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:12px 0 8px;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Total Amount:</td>
-            <td style="padding:12px 0 8px;font-weight:bold;font-size:20px;color:#E63B2E;border-top:1px solid #e4e4e7;">&#8364;${booking.totalAmount.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:13px;">Security Deposit:</td>
-            <td style="padding:8px 0;color:#6b7280;font-size:13px;">&#8364;${booking.depositAmount.toFixed(2)} (required at vehicle pickup — handled via card hold on-site)</td>
-          </tr>
-        </table>
-      </div>
+  const bodyHtml = sq ? `
+    <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+      <p style="color:#166534;font-weight:bold;font-size:18px;margin:0;">&#10003; Rezervimi u konfirmua!</p>
+    </div>
+    <p style="color:#374151;">Mirëdita ${safeName},</p>
+    <p style="color:#374151;">Rezervimi juaj për marrje me qira veture është konfirmuar. Ja detajet tuaja:</p>
 
-      <h3 style="color:#0F1E3C;margin-top:24px;">What to bring at pickup:</h3>
-      <ul style="color:#374151;font-size:14px;line-height:2;">
-        <li>Valid passport or national ID card</li>
-        <li>Original driving licence</li>
-        <li>Credit or debit card (for the security deposit)</li>
-        <li>This booking confirmation</li>
-      </ul>
+    <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Numri i rezervimit:</td>
+          <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Vetura:</td>
+          <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;border-top:1px solid #e4e4e7;">${safeCar}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Marrja:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safePickup}<br/><strong>${pickupStr}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Kthimi:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safeDropoff}<br/><strong>${returnStr}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0 8px;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Shuma totale:</td>
+          <td style="padding:12px 0 8px;font-weight:bold;font-size:20px;color:#E63B2E;border-top:1px solid #e4e4e7;">&#8364;${booking.totalAmount.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:13px;">Depozita e sigurisë:</td>
+          <td style="padding:8px 0;color:#6b7280;font-size:13px;">&#8364;${booking.depositAmount.toFixed(2)} (paguhet në marrje të veturës — bllokadë karte në vendndodhje)</td>
+        </tr>
+      </table>
+    </div>
 
-      <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
-        <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Questions? We&apos;re here 24/7</p>
-        <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
-      </div>
+    <h3 style="color:#0F1E3C;margin-top:24px;">Çfarë të sillni gjatë marrjes:</h3>
+    <ul style="color:#374151;font-size:14px;line-height:2;">
+      <li>Pasaportë e vlefshme ose letërnjoftim kombëtar</li>
+      <li>Patentë shoferi origjinale</li>
+      <li>Kartë krediti ose debiti (për depozitën e sigurisë)</li>
+      <li>Ky konfirmim rezervimi</li>
+    </ul>
 
-      <div style="text-align:center;margin-top:24px;">
-        <a href="${escapeHtml(biz.appUrl)}/dashboard/bookings" style="background:#0F1E3C;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">
-          View Booking in My Account
-        </a>
-      </div>
-    `, biz),
-  });
+    <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
+      <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Pyetje? Jemi në dispozicionin tuaj 24/7</p>
+      <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+      <a href="${escapeHtml(biz.appUrl)}/dashboard/bookings" style="background:#0F1E3C;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">
+        Shikoni Rezervimin në Llogarinë Time
+      </a>
+    </div>
+  ` : `
+    <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+      <p style="color:#166534;font-weight:bold;font-size:18px;margin:0;">&#10003; Booking Confirmed!</p>
+    </div>
+    <p style="color:#374151;">Hi ${safeName},</p>
+    <p style="color:#374151;">Your car rental booking has been confirmed. Here are your details:</p>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Booking Reference:</td>
+          <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Vehicle:</td>
+          <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;border-top:1px solid #e4e4e7;">${safeCar}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Pickup:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safePickup}<br/><strong>${pickupStr}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Return:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${safeDropoff}<br/><strong>${returnStr}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0 8px;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Total Amount:</td>
+          <td style="padding:12px 0 8px;font-weight:bold;font-size:20px;color:#E63B2E;border-top:1px solid #e4e4e7;">&#8364;${booking.totalAmount.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:13px;">Security Deposit:</td>
+          <td style="padding:8px 0;color:#6b7280;font-size:13px;">&#8364;${booking.depositAmount.toFixed(2)} (required at vehicle pickup — handled via card hold on-site)</td>
+        </tr>
+      </table>
+    </div>
+
+    <h3 style="color:#0F1E3C;margin-top:24px;">What to bring at pickup:</h3>
+    <ul style="color:#374151;font-size:14px;line-height:2;">
+      <li>Valid passport or national ID card</li>
+      <li>Original driving licence</li>
+      <li>Credit or debit card (for the security deposit)</li>
+      <li>This booking confirmation</li>
+    </ul>
+
+    <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
+      <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Questions? We&apos;re here 24/7</p>
+      <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+      <a href="${escapeHtml(biz.appUrl)}/dashboard/bookings" style="background:#0F1E3C;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">
+        View Booking in My Account
+      </a>
+    </div>
+  `;
+
+  await sendMail({ to: email, subject, html: htmlWrapper(bodyHtml, biz, language) });
 }
 
 export async function sendBookingStatusEmail(
@@ -281,16 +368,20 @@ export async function sendBookingStatusEmail(
     carName: string;
     newStatus: string;
     reason?: string;
-  }
+  },
+  language?: string
 ): Promise<void> {
   const biz = await getEmailBizInfo();
+  const sq = isSq(language);
 
   const safeRef = escapeHtml(data.bookingRef);
   const safeName = escapeHtml(data.firstName);
   const safeCar = escapeHtml(data.carName);
   const safeReason = data.reason ? escapeHtml(data.reason) : null;
 
-  const statusMessages: Record<string, { subject: string; headline: string; body: string; color: string }> = {
+  interface StatusMsg { subject: string; headline: string; body: string; color: string }
+
+  const statusMessagesEn: Record<string, StatusMsg> = {
     CONFIRMED: {
       subject: `Booking Confirmed — ${data.bookingRef}`,
       headline: "&#10003; Your booking is confirmed",
@@ -321,54 +412,101 @@ export async function sendBookingStatusEmail(
     },
   };
 
-  const msg = statusMessages[data.newStatus];
-  if (!msg) return; // No email for this transition
+  const statusMessagesSq: Record<string, StatusMsg> = {
+    CONFIRMED: {
+      subject: `Rezervimi u konfirmua — ${data.bookingRef}`,
+      headline: "&#10003; Rezervimi juaj është konfirmuar",
+      body: "Lajm i mirë! Rezervimi juaj është konfirmuar. Ju presim gjatë marrjes së veturës.",
+      color: "#22c55e",
+    },
+    CANCELLED: {
+      subject: `Rezervimi u anulua — ${data.bookingRef}`,
+      headline: "Rezervimi juaj është anuluar",
+      body: safeReason
+        ? `Rezervimi juaj është anuluar. Arsyeja: ${safeReason}`
+        : "Rezervimi juaj është anuluar. Nëse keni pyetje, na kontaktoni.",
+      color: "#ef4444",
+    },
+    REJECTED: {
+      subject: `Përditësim rezervimi — ${data.bookingRef}`,
+      headline: "Nuk mund ta konfirmojmë rezervimin tuaj",
+      body: safeReason
+        ? `Fatkeqësisht nuk mund ta konfirmojmë rezervimin tuaj. Arsyeja: ${safeReason}. Na kontaktoni për të diskutuar alternativa.`
+        : "Fatkeqësisht nuk mund ta konfirmojmë këtë rezervim. Na kontaktoni për ndihmë.",
+      color: "#f97316",
+    },
+    COMPLETED: {
+      subject: `Faleminderit që udhëtuat me ${biz.businessName} — ${data.bookingRef}`,
+      headline: `Faleminderit që zgjodhët ${escapeHtml(biz.businessName)}!`,
+      body: "Shpresojmë që keni pasur një përvojë të shkëlqyer. Do të donim të dëgjonim mendimin tuaj dhe shpresojmë t&apos;ju shërbejmë sërish.",
+      color: "#0F1E3C",
+    },
+  };
 
-  await sendMail({
-    to: email,
-    subject: msg.subject,
-    html: htmlWrapper(`
-      <div style="border-left:4px solid ${msg.color};padding:16px 20px;border-radius:4px;margin-bottom:24px;background:${msg.color}12;">
-        <p style="color:${msg.color};font-weight:bold;font-size:18px;margin:0;">${msg.headline}</p>
-      </div>
-      <p style="color:#374151;">Hi ${safeName},</p>
-      <p style="color:#374151;">${msg.body}</p>
-      <div style="background:#f8fafc;border-radius:8px;padding:16px;margin:20px 0;border:1px solid #e4e4e7;">
-        <p style="color:#6b7280;font-size:14px;margin:0;">Booking Reference: <strong style="color:#0F1E3C;font-family:monospace;">${safeRef}</strong></p>
-        <p style="color:#6b7280;font-size:14px;margin:4px 0 0;">Vehicle: <strong style="color:#0F1E3C;">${safeCar}</strong></p>
-      </div>
-      <p style="color:#374151;font-size:14px;">Questions? Contact us: &#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
-    `, biz),
-  });
+  const messages = sq ? statusMessagesSq : statusMessagesEn;
+  const msg = messages[data.newStatus];
+  if (!msg) return;
+
+  const bodyHtml = `
+    <div style="border-left:4px solid ${msg.color};padding:16px 20px;border-radius:4px;margin-bottom:24px;background:${msg.color}12;">
+      <p style="color:${msg.color};font-weight:bold;font-size:18px;margin:0;">${msg.headline}</p>
+    </div>
+    <p style="color:#374151;">${sq ? "Mirëdita" : "Hi"} ${safeName},</p>
+    <p style="color:#374151;">${msg.body}</p>
+    <div style="background:#f8fafc;border-radius:8px;padding:16px;margin:20px 0;border:1px solid #e4e4e7;">
+      <p style="color:#6b7280;font-size:14px;margin:0;">${sq ? "Numri i rezervimit" : "Booking Reference"}: <strong style="color:#0F1E3C;font-family:monospace;">${safeRef}</strong></p>
+      <p style="color:#6b7280;font-size:14px;margin:4px 0 0;">${sq ? "Vetura" : "Vehicle"}: <strong style="color:#0F1E3C;">${safeCar}</strong></p>
+    </div>
+    <p style="color:#374151;font-size:14px;">${sq ? "Pyetje? Na kontaktoni" : "Questions? Contact us"}: &#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+  `;
+
+  await sendMail({ to: email, subject: msg.subject, html: htmlWrapper(bodyHtml, biz, language) });
 }
 
 export async function sendEmailVerificationEmail(
   email: string,
   token: string,
-  firstName?: string | null
+  firstName?: string | null,
+  language?: string
 ): Promise<void> {
   const biz = await getEmailBizInfo();
   const verifyUrl = `${biz.appUrl}/verify-email?token=${token}`;
-  const safeName = escapeHtml(firstName ?? "there");
+  const safeName = escapeHtml(firstName ?? (isSq(language) ? "ju" : "there"));
+  const sq = isSq(language);
 
-  await sendMail({
-    to: email,
-    subject: `Verify your ${biz.businessName} email address`,
-    html: htmlWrapper(`
-      <h2 style="color:#0F1E3C;margin-top:0;">Confirm Your Email Address</h2>
-      <p style="color:#374151;">Hi ${safeName},</p>
-      <p style="color:#374151;">Thank you for creating an account with ${escapeHtml(biz.businessName)}. Please verify your email address to complete your registration:</p>
-      <div style="text-align:center;margin:32px 0;">
-        <a href="${escapeHtml(verifyUrl)}" style="background:#0F1E3C;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
-          Verify Email Address
-        </a>
-      </div>
-      <p style="color:#6b7280;font-size:14px;">This link will expire in <strong>24 hours</strong>.</p>
-      <p style="color:#6b7280;font-size:14px;">If you did not create an account, you can safely ignore this email.</p>
-      <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
-      <p style="color:#9ca3af;font-size:12px;">If the button above doesn&apos;t work, copy this link:<br/><a href="${escapeHtml(verifyUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(verifyUrl)}</a></p>
-    `, biz),
-  });
+  const subject = sq
+    ? `Konfirmoni adresën tuaj të emailit — ${biz.businessName}`
+    : `Verify your ${biz.businessName} email address`;
+
+  const bodyHtml = sq ? `
+    <h2 style="color:#0F1E3C;margin-top:0;">Konfirmoni Adresën e Emailit</h2>
+    <p style="color:#374151;">Mirëdita ${safeName},</p>
+    <p style="color:#374151;">Faleminderit që krijuat llogari në ${escapeHtml(biz.businessName)}. Ju lutemi konfirmoni adresën tuaj të emailit për të përfunduar regjistrimin:</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${escapeHtml(verifyUrl)}" style="background:#0F1E3C;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
+        Konfirmoni Emailin
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:14px;">Ky link skadon brenda <strong>24 orëve</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;">Nëse nuk keni krijuar llogari, mund ta injoroni këtë email me siguri.</p>
+    <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
+    <p style="color:#9ca3af;font-size:12px;">Nëse butoni nuk funksionon, kopjoni këtë link:<br/><a href="${escapeHtml(verifyUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(verifyUrl)}</a></p>
+  ` : `
+    <h2 style="color:#0F1E3C;margin-top:0;">Confirm Your Email Address</h2>
+    <p style="color:#374151;">Hi ${safeName},</p>
+    <p style="color:#374151;">Thank you for creating an account with ${escapeHtml(biz.businessName)}. Please verify your email address to complete your registration:</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${escapeHtml(verifyUrl)}" style="background:#0F1E3C;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;display:inline-block;">
+        Verify Email Address
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:14px;">This link will expire in <strong>24 hours</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;">If you did not create an account, you can safely ignore this email.</p>
+    <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />
+    <p style="color:#9ca3af;font-size:12px;">If the button above doesn&apos;t work, copy this link:<br/><a href="${escapeHtml(verifyUrl)}" style="color:#0F1E3C;word-break:break-all;">${escapeHtml(verifyUrl)}</a></p>
+  `;
+
+  await sendMail({ to: email, subject, html: htmlWrapper(bodyHtml, biz, language) });
 }
 
 export async function sendRefundEmail(
@@ -379,53 +517,91 @@ export async function sendRefundEmail(
     amount: number;
     isFullRefund: boolean;
     reason: string;
-  }
+  },
+  language?: string
 ): Promise<void> {
   const biz = await getEmailBizInfo();
+  const sq = isSq(language);
 
   const safeRef = escapeHtml(data.bookingRef);
   const safeName = escapeHtml(data.customerFirstName);
   const safeReason = escapeHtml(data.reason);
 
-  await sendMail({
-    to: email,
-    subject: `Refund Processed — ${data.bookingRef} | ${biz.businessName}`,
-    html: htmlWrapper(`
-      <div style="background:#fef3c7;border-left:4px solid #d97706;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
-        <p style="color:#92400e;font-weight:bold;font-size:18px;margin:0;">Refund Processed</p>
-      </div>
-      <p style="color:#374151;">Hi ${safeName},</p>
-      <p style="color:#374151;">We have processed a ${data.isFullRefund ? "full" : "partial"} refund for your booking <strong>${safeRef}</strong>.</p>
+  const subject = sq
+    ? `Rimbursim i procesuar — ${data.bookingRef} | ${biz.businessName}`
+    : `Refund Processed — ${data.bookingRef} | ${biz.businessName}`;
 
-      <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Booking Reference:</td>
-            <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Refund Amount:</td>
-            <td style="padding:8px 0;font-weight:bold;font-size:20px;color:#d97706;border-top:1px solid #e4e4e7;">&#8364;${data.amount.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Type:</td>
-            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${data.isFullRefund ? "Full refund" : "Partial refund"}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Reason:</td>
-            <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;font-style:italic;">${safeReason}</td>
-          </tr>
-        </table>
-      </div>
+  const bodyHtml = sq ? `
+    <div style="background:#fef3c7;border-left:4px solid #d97706;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+      <p style="color:#92400e;font-weight:bold;font-size:18px;margin:0;">Rimbursim i Procesuar</p>
+    </div>
+    <p style="color:#374151;">Mirëdita ${safeName},</p>
+    <p style="color:#374151;">Kemi procesuar një rimbursim ${data.isFullRefund ? "të plotë" : "të pjesshëm"} për rezervimin tuaj <strong>${safeRef}</strong>.</p>
 
-      <p style="color:#374151;font-size:14px;">The refund will appear on your original payment method within <strong>5–10 business days</strong>, depending on your bank.</p>
+    <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Numri i rezervimit:</td>
+          <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Shuma e rimbursimit:</td>
+          <td style="padding:8px 0;font-weight:bold;font-size:20px;color:#d97706;border-top:1px solid #e4e4e7;">&#8364;${data.amount.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Lloji:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${data.isFullRefund ? "Rimbursim i plotë" : "Rimbursim i pjesshëm"}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Arsyeja:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;font-style:italic;">${safeReason}</td>
+        </tr>
+      </table>
+    </div>
 
-      <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
-        <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Questions?</p>
-        <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
-      </div>
-    `, biz),
-  });
+    <p style="color:#374151;font-size:14px;">Rimbursimi do të shfaqet në mjetin tuaj origjinal të pagesës brenda <strong>5–10 ditëve pune</strong>, në varësi të bankës suaj.</p>
+
+    <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
+      <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Pyetje?</p>
+      <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+    </div>
+  ` : `
+    <div style="background:#fef3c7;border-left:4px solid #d97706;padding:16px 20px;border-radius:4px;margin-bottom:24px;">
+      <p style="color:#92400e;font-weight:bold;font-size:18px;margin:0;">Refund Processed</p>
+    </div>
+    <p style="color:#374151;">Hi ${safeName},</p>
+    <p style="color:#374151;">We have processed a ${data.isFullRefund ? "full" : "partial"} refund for your booking <strong>${safeRef}</strong>.</p>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:20px;margin:20px 0;border:1px solid #e4e4e7;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;width:45%;">Booking Reference:</td>
+          <td style="padding:8px 0;font-weight:bold;color:#0F1E3C;font-family:monospace;font-size:16px;">${safeRef}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Refund Amount:</td>
+          <td style="padding:8px 0;font-weight:bold;font-size:20px;color:#d97706;border-top:1px solid #e4e4e7;">&#8364;${data.amount.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Type:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;">${data.isFullRefund ? "Full refund" : "Partial refund"}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e4e4e7;">Reason:</td>
+          <td style="padding:8px 0;color:#374151;border-top:1px solid #e4e4e7;font-style:italic;">${safeReason}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="color:#374151;font-size:14px;">The refund will appear on your original payment method within <strong>5–10 business days</strong>, depending on your bank.</p>
+
+    <div style="background:#eff6ff;border-radius:8px;padding:16px;margin-top:24px;">
+      <p style="color:#1e40af;font-size:14px;margin:0;font-weight:bold;">Questions?</p>
+      <p style="color:#1d4ed8;font-size:14px;margin:4px 0 0;">&#128222; ${escapeHtml(biz.phone)} &nbsp;|&nbsp; &#9993; ${escapeHtml(biz.supportEmail)}</p>
+    </div>
+  `;
+
+  await sendMail({ to: email, subject, html: htmlWrapper(bodyHtml, biz, language) });
 }
 
 export async function sendAdminNewBookingEmail(

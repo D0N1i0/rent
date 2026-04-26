@@ -8,6 +8,7 @@ import { addHours } from "date-fns";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { optionalPhoneSchema } from "@/lib/validations/phone";
+import { normalizeOptionalPhone } from "@/lib/phone";
 
 const schema = z.object({
   firstName: z.string().min(2).max(50),
@@ -38,7 +39,16 @@ export async function POST(req: NextRequest) {
 
     const { firstName, lastName, email, phone, nationality, password } = parsed.data;
     const normalizedEmail = email.toLowerCase().trim();
-    const normalizedPhone = phone?.trim() || null;
+
+    // Normalize to E.164 if provided; reject clearly invalid numbers
+    let normalizedPhone: string | null = null;
+    if (phone?.trim()) {
+      const phoneResult = normalizeOptionalPhone(phone);
+      if (phoneResult && !phoneResult.ok) {
+        return NextResponse.json({ error: "Invalid phone number. Please include your country code (e.g. +383 44 123 456)." }, { status: 400 });
+      }
+      normalizedPhone = phoneResult?.e164 ?? null;
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
 

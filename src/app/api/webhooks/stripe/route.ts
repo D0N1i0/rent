@@ -61,8 +61,19 @@ export async function POST(req: NextRequest) {
         const bookingId = intent.metadata?.bookingId;
         if (!bookingId) break;
 
-        const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-        if (!booking) break;
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          select: {
+            id: true,
+            status: true,
+            paymentStatus: true,
+            confirmedAt: true,
+          },
+        });
+        if (!booking) {
+          console.warn(`[Stripe Webhook] payment_intent.succeeded: booking ${bookingId} not found`);
+          break;
+        }
 
         // Idempotency: skip if already marked paid
         if (booking.paymentStatus === "PAID") break;
@@ -132,8 +143,12 @@ export async function POST(req: NextRequest) {
 
         const booking = await prisma.booking.findFirst({
           where: { stripePaymentIntentId: String(charge.payment_intent) },
+          select: { id: true },
         });
-        if (!booking) break;
+        if (!booking) {
+          console.warn(`[Stripe Webhook] charge.refunded: no booking for payment_intent ${charge.payment_intent}`);
+          break;
+        }
 
         const fullyRefunded = charge.amount_refunded >= charge.amount;
 

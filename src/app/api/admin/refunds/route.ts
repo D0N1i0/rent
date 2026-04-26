@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isAdminRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { stripe, eurosToCents } from "@/lib/stripe";
 import { toNumber } from "@/lib/money";
 import { sendRefundEmail } from "@/lib/email";
@@ -22,6 +23,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user || !isAdminRole(session.user.role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  const rl = await checkAdminRateLimit(req, session.user.id, "refund");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);

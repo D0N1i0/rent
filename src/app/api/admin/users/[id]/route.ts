@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isAdminRole, getSessionRole } from "@/lib/authz";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { optionalPhoneSchema } from "@/lib/validations/phone";
+import { normalizeOptionalPhone } from "@/lib/phone";
 
 async function requireAdmin() {
   const session = await auth();
@@ -33,6 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   if (id === session.user.id) {
     return NextResponse.json({ error: "Cannot modify your own account via admin" }, { status: 403 });
@@ -45,13 +49,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const d = parsed.data;
 
-    // Uniqueness checks (phone, idNumber, licenseNumber) — only when provided and non-empty
-    const phone = d.phone?.trim() || null;
+    // Normalize phone to E.164 — uniqueness checks follow
+    let phone: string | null = null;
+    if (d.phone?.trim()) {
+      const phoneResult = normalizeOptionalPhone(d.phone);
+      if (phoneResult && !phoneResult.ok) {
+        return NextResponse.json({ error: "Invalid phone number. Please include the country code (e.g. +383 44 123 456)." }, { status: 400 });
+      }
+      phone = phoneResult?.e164 ?? null;
+    }
     const idNumber = d.idNumber?.trim() || null;
     const licenseNumber = d.licenseNumber?.trim() || null;
 
     if (phone) {
-      const existing = await prisma.user.findFirst({ where: { phone, id: { not: id } } });
+      const existing = await prisma.user.findFirst({ where: { phone, id: { not: id } }, select: { id: true } });
       if (existing) return NextResponse.json({ error: "Phone number is already linked to another account." }, { status: 409 });
     }
     if (idNumber) {
@@ -105,6 +116,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   if (id === session.user.id) {
     return NextResponse.json({ error: "Cannot delete your own admin account" }, { status: 403 });
@@ -137,6 +150,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const rl = await checkAdminRateLimit(req, session.user.id, "write");
+  if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
   const user = await prisma.user.findUnique({
     where: { id },
