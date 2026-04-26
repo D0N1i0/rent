@@ -8,7 +8,7 @@ import type { Extra, ExtraPricingType } from "@prisma/client";
 import { formatCurrency, cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
-const emptyForm = { name: "", description: "", price: 0, pricingType: "PER_DAY" as ExtraPricingType, isActive: true, sortOrder: 0 };
+const emptyForm = { name: "", description: "", price: 0, pricingType: "PER_DAY" as ExtraPricingType, isActive: true, sortOrder: 0, protectionCategory: "" };
 
 const pricingLabels: Record<string, string> = { PER_DAY: "Per Day", ONE_TIME: "One Time", PER_BOOKING: "Per Booking" };
 
@@ -29,9 +29,10 @@ export function ExtrasAdminClient({ extras: init }: { extras: Extra[] }) {
     try {
       const url = editingId ? `/api/admin/extras/${editingId}` : "/api/admin/extras";
       const method = editingId ? "PUT" : "POST";
+      const payload = { ...form, protectionCategory: form.protectionCategory || null };
       const res = await fetch(url, {
         method, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) { const d = await res.json(); alert(d.error ?? "Failed"); return; }
       setShowForm(false); setEditingId(null); setForm(emptyForm);
@@ -40,7 +41,7 @@ export function ExtrasAdminClient({ extras: init }: { extras: Extra[] }) {
   };
 
   const handleEdit = (e: Extra) => {
-    setForm({ name: e.name, description: e.description ?? "", price: Number(e.price), pricingType: e.pricingType, isActive: e.isActive, sortOrder: e.sortOrder });
+    setForm({ name: e.name, description: e.description ?? "", price: Number(e.price), pricingType: e.pricingType, isActive: e.isActive, sortOrder: e.sortOrder, protectionCategory: e.protectionCategory ?? "" });
     setEditingId(e.id); setShowForm(true);
   };
 
@@ -102,6 +103,16 @@ export function ExtrasAdminClient({ extras: init }: { extras: Extra[] }) {
               <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Sort Order</label>
               <input type="number" value={form.sortOrder} min={0} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} className="form-input" />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Protection / Insurance Tier</label>
+              <select value={form.protectionCategory} onChange={e => setForm(f => ({ ...f, protectionCategory: e.target.value }))} className="form-input appearance-none">
+                <option value="">— Not a protection extra —</option>
+                <option value="BASIC">BASIC — Basic / TPL included</option>
+                <option value="CDW">CDW — Collision Damage Waiver</option>
+                <option value="PREMIUM">PREMIUM — Full Coverage / Zero Excess</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Use this to mark protection/insurance options. They appear as a dedicated insurance section in the booking form.</p>
+            </div>
             <div className="flex items-center gap-2 mt-5">
               <input type="checkbox" id="extraActive" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-navy-900" />
               <label htmlFor="extraActive" className="text-sm font-medium text-gray-700">Active (visible to customers)</label>
@@ -120,7 +131,7 @@ export function ExtrasAdminClient({ extras: init }: { extras: Extra[] }) {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {["Extra", "Price", "Pricing Type", "Status", "Actions"].map(h => (
+              {["Extra", "Price", "Pricing Type", "Protection Tier", "Status", "Actions"].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -135,6 +146,13 @@ export function ExtrasAdminClient({ extras: init }: { extras: Extra[] }) {
                 <td className="px-4 py-3.5 font-semibold text-sm text-navy-900">{formatCurrency(extra.price)}</td>
                 <td className="px-4 py-3.5">
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{pricingLabels[extra.pricingType]}</span>
+                </td>
+                <td className="px-4 py-3.5">
+                  {extra.protectionCategory ? (
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">{extra.protectionCategory}</span>
+                  ) : (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3.5">
                   <span className={cn("status-badge text-xs", extra.isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200")}>

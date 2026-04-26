@@ -19,6 +19,7 @@ const schema = z.object({
   pricingType: z.enum(["ONE_TIME", "PER_DAY", "PER_BOOKING"]),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
+  protectionCategory: z.enum(["BASIC", "CDW", "PREMIUM"]).nullable().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });
 
   const extra = await prisma.extra.create({
-    data: { ...parsed.data, description: parsed.data.description || null },
+    data: { ...parsed.data, description: parsed.data.description || null, protectionCategory: parsed.data.protectionCategory ?? null },
   });
   return NextResponse.json({ extra }, { status: 201 });
 }

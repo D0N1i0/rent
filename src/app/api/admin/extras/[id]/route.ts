@@ -19,6 +19,7 @@ const schema = z.object({
   pricingType: z.enum(["ONE_TIME", "PER_DAY", "PER_BOOKING"]).optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
+  protectionCategory: z.enum(["BASIC", "CDW", "PREMIUM"]).nullable().optional(),
 });
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
