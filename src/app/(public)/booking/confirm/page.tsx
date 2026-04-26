@@ -17,11 +17,34 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
   const booking = await prisma.booking.findUnique({
     where: { bookingRef: sp.ref },
-    include: {
-      car: { include: { images: { where: { isPrimary: true } }, category: true } },
-      pickupLocation: true,
-      dropoffLocation: true,
-      extras: true,
+    select: {
+      id: true,
+      bookingRef: true,
+      status: true,
+      paymentStatus: true,
+      pickupDateTime: true,
+      dropoffDateTime: true,
+      durationDays: true,
+      basePricePerDay: true,
+      subtotal: true,
+      extrasTotal: true,
+      pickupFee: true,
+      dropoffFee: true,
+      vatAmount: true,
+      vatRate: true,
+      totalAmount: true,
+      depositAmount: true,
+      car: {
+        select: {
+          name: true,
+          year: true,
+          category: { select: { name: true } },
+          images: { where: { isPrimary: true }, select: { url: true, alt: true } },
+        },
+      },
+      pickupLocation: { select: { name: true } },
+      dropoffLocation: { select: { name: true } },
+      extras: { select: { id: true, name: true, total: true } },
     },
   });
 

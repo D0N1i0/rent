@@ -10,7 +10,12 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
     where: { id },
     include: {
       bookings: {
-        include: {
+        select: {
+          id: true,
+          bookingRef: true,
+          status: true,
+          totalAmount: true,
+          pickupDateTime: true,
           car: { select: { name: true } },
           pickupLocation: { select: { name: true } },
         },
