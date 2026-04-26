@@ -10,6 +10,7 @@ import {
   normalizePhoneNumber,
 } from "@/lib/phone";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface PhoneInputProps {
   value: string;
@@ -19,8 +20,6 @@ interface PhoneInputProps {
   disabled?: boolean;
   placeholder?: string;
 }
-
-const countryOptions = getPhoneCountryOptions();
 
 function countryFlag(code: string) {
   if (code === "XK") return "🇽🇰";
@@ -51,6 +50,9 @@ export function PhoneInput({
   disabled,
   placeholder = "44 123 456",
 }: PhoneInputProps) {
+  const { locale } = useLanguage();
+  const phoneLocale = locale === "al" ? "sq" : "en";
+  const countryOptions = useMemo(() => getPhoneCountryOptions(phoneLocale), [phoneLocale]);
   const parsed = formatPhoneForCountryInput(value, DEFAULT_PHONE_COUNTRY);
   const [country, setCountry] = useState<CountryCode>(parsed.country);
   const [nationalNumber, setNationalNumber] = useState(parsed.nationalNumber);
@@ -116,7 +118,7 @@ export function PhoneInput({
             disabled={disabled}
             onClick={() => setOpen(!open)}
             className="flex items-center gap-1.5 px-3 py-2.5 h-full bg-gray-50 border-r border-gray-200 hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700 min-w-[88px]"
-            aria-label="Select phone country"
+            aria-label={locale === "al" ? "Zgjidh shtetin e telefonit" : "Select phone country"}
             aria-expanded={open}
           >
             <span className="text-base leading-none">{countryFlag(selectedCountry.code)}</span>
@@ -129,7 +131,7 @@ export function PhoneInput({
               <div className="p-2 border-b border-gray-100">
                 <input
                   type="text"
-                  placeholder="Search country..."
+                  placeholder={locale === "al" ? "Kërko shtetin..." : "Search country..."}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-navy-900/30"
@@ -154,7 +156,9 @@ export function PhoneInput({
                   </li>
                 ))}
                 {filtered.length === 0 && (
-                  <li className="px-3 py-4 text-sm text-gray-400 text-center">No countries found</li>
+                  <li className="px-3 py-4 text-sm text-gray-400 text-center">
+                    {locale === "al" ? "Nuk u gjet asnjë shtet" : "No countries found"}
+                  </li>
                 )}
               </ul>
             </div>

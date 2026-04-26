@@ -24,10 +24,10 @@ export function isValidInternationalPhone(value: string | null | undefined): boo
   return normalizePhoneNumber(value) !== null;
 }
 
-export function getPhoneCountryOptions() {
+export function getPhoneCountryOptions(locale: "en" | "sq" = "en") {
   const displayNames =
     typeof Intl !== "undefined" && "DisplayNames" in Intl
-      ? new Intl.DisplayNames(["en"], { type: "region" })
+      ? new Intl.DisplayNames([locale], { type: "region" })
       : null;
 
   return getCountries()
