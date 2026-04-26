@@ -3,9 +3,11 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { CheckCircle, Calendar, MapPin, Car, Mail, Phone, ArrowRight } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, Car, Mail, Phone, ArrowRight, Shield } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { getPublicSettings } from "@/lib/settings";
+import { getServerLocale } from "@/lib/i18n/server";
+import { translations } from "@/lib/i18n/translations";
 
 interface Props {
   searchParams: Promise<{ ref?: string }>;
@@ -14,6 +16,9 @@ interface Props {
 export default async function BookingConfirmPage({ searchParams }: Props) {
   const sp = await searchParams;
   if (!sp.ref) notFound();
+
+  const locale = await getServerLocale();
+  const t = translations[locale];
 
   const booking = await prisma.booking.findUnique({
     where: { bookingRef: sp.ref },
@@ -44,7 +49,14 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
       },
       pickupLocation: { select: { name: true } },
       dropoffLocation: { select: { name: true } },
-      extras: { select: { id: true, name: true, total: true } },
+      extras: {
+        select: {
+          id: true,
+          name: true,
+          total: true,
+          extra: { select: { protectionCategory: true } },
+        },
+      },
     },
   });
 
@@ -63,17 +75,17 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
           <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-10 w-10 text-green-500" />
           </div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-navy-900 mb-2">Booking Confirmed!</h1>
-          <p className="text-gray-600 mb-4">Your reservation has been received. A confirmation has been sent to your email.</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-navy-900 mb-2">{t.confirm.title}</h1>
+          <p className="text-gray-600 mb-4">{t.confirm.subtitle}</p>
           <div className="inline-flex items-center gap-2 bg-navy-900 text-white rounded-xl px-5 py-2.5">
-            <span className="text-sm font-medium">Booking Reference:</span>
+            <span className="text-sm font-medium">{t.confirm.bookingRef}:</span>
             <span className="font-mono font-bold text-lg tracking-wider">{booking.bookingRef}</span>
           </div>
         </div>
 
         {/* Booking details */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <h2 className="font-bold text-navy-900 mb-4">Booking Details</h2>
+          <h2 className="font-bold text-navy-900 mb-4">{t.confirm.bookingDetails}</h2>
 
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
             <div className="h-10 w-10 bg-navy-50 rounded-lg flex items-center justify-center">
@@ -89,7 +101,7 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Pickup</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase">{t.confirm.pickup}</p>
                 <p className="text-sm font-medium text-navy-900">{booking.pickupLocation.name}</p>
                 <p className="text-xs text-gray-500">{formatDateTime(booking.pickupDateTime)}</p>
               </div>
@@ -97,7 +109,7 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Drop-off</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase">{t.confirm.dropoff}</p>
                 <p className="text-sm font-medium text-navy-900">{booking.dropoffLocation.name}</p>
                 <p className="text-xs text-gray-500">{formatDateTime(booking.dropoffDateTime)}</p>
               </div>
@@ -106,45 +118,55 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
           <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between text-gray-600">
-              <span>{booking.durationDays} day{booking.durationDays !== 1 ? "s" : ""} × {formatCurrency(booking.basePricePerDay)}/day</span>
+              <span>{booking.durationDays} {locale === "al" ? "ditë" : `day${booking.durationDays !== 1 ? "s" : ""}`} × {formatCurrency(booking.basePricePerDay)}{locale === "al" ? "/ditë" : "/day"}</span>
               <span>{formatCurrency(booking.subtotal)}</span>
             </div>
-            {Number(booking.extrasTotal) > 0 && (
-              <div className="flex justify-between text-gray-600">
-                <span>Extras</span>
-                <span>{formatCurrency(booking.extrasTotal)}</span>
-              </div>
-            )}
+            {/* Individual extras — protection shown with shield badge */}
+            {booking.extras.map((be) => {
+              const isProtection = !!be.extra?.protectionCategory;
+              return (
+                <div key={be.id} className="flex justify-between text-gray-600">
+                  <span className="flex items-center gap-1.5">
+                    {isProtection && <Shield className="h-3.5 w-3.5 text-navy-700 shrink-0" />}
+                    {be.name}
+                    {isProtection && (
+                      <span className="text-xs bg-navy-100 text-navy-700 px-1.5 py-0.5 rounded-full font-medium">{be.extra!.protectionCategory}</span>
+                    )}
+                  </span>
+                  <span>{formatCurrency(be.total)}</span>
+                </div>
+              );
+            })}
             {Number(booking.pickupFee) > 0 && (
               <div className="flex justify-between text-gray-600">
-                <span>Pickup fee</span>
+                <span>{t.booking.pickupFee}</span>
                 <span>{formatCurrency(booking.pickupFee)}</span>
               </div>
             )}
             {Number(booking.dropoffFee) > 0 && (
               <div className="flex justify-between text-gray-600">
-                <span>Drop-off fee</span>
+                <span>{t.booking.dropoffFee}</span>
                 <span>{formatCurrency(booking.dropoffFee)}</span>
               </div>
             )}
             {Number(booking.vatAmount) > 0 && (
               <>
                 <div className="border-t border-gray-100 pt-2 flex justify-between text-gray-500">
-                  <span>Subtotal (excl. VAT)</span>
+                  <span>{t.payment.subtotalExclVat}</span>
                   <span>{formatCurrency(preTaxTotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
-                  <span>VAT ({Math.round(Number(booking.vatRate) * 100)}%)</span>
+                  <span>{t.payment.vatRate} ({Math.round(Number(booking.vatRate) * 100)}%)</span>
                   <span>{formatCurrency(vatAmount)}</span>
                 </div>
               </>
             )}
             <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-navy-900">
-              <span>Total (incl. VAT)</span>
+              <span>{t.payment.totalInclVat}</span>
               <span className="text-crimson-600">{formatCurrency(booking.totalAmount)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-400">
-              <span>Security deposit (required at pickup, card hold on-site)</span>
+              <span>{t.payment.depositPreAuth}</span>
               <span>{formatCurrency(booking.depositAmount)}</span>
             </div>
           </div>
@@ -152,9 +174,9 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
         {/* What to bring */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <h2 className="font-bold text-navy-900 mb-3">What to Bring</h2>
+          <h2 className="font-bold text-navy-900 mb-3">{t.confirm.whatToBring}</h2>
           <ul className="space-y-2">
-            {["Valid passport or national ID card", "Original driving licence", "Credit or debit card (for deposit)", "This booking confirmation (email or screenshot)"].map(item => (
+            {[t.confirm.bringId, t.confirm.bringLicense, t.confirm.bringCard, t.confirm.bringConfirmation].map(item => (
               <li key={item} className="flex items-center gap-2 text-sm text-gray-700">
                 <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                 {item}
@@ -165,8 +187,8 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
 
         {/* Contact */}
         <div className="bg-navy-900 rounded-2xl p-6 text-white mb-6">
-          <h2 className="font-bold mb-3">Need Help?</h2>
-          <p className="text-gray-300 text-sm mb-4">Our team is available 24/7. Don't hesitate to reach out.</p>
+          <h2 className="font-bold mb-3">{t.confirm.needHelp}</h2>
+          <p className="text-gray-300 text-sm mb-4">{t.confirm.support247}</p>
           <div className="flex flex-wrap gap-4">
             <a href={`tel:${settings.phone.replace(/\s+/g, "")}`} className="flex items-center gap-2 text-sm hover:text-crimson-300 transition-colors">
               <Phone className="h-4 w-4" />
@@ -190,11 +212,11 @@ export default async function BookingConfirmPage({ searchParams }: Props) {
         </div>
 
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/" className="btn-outline text-sm px-6 py-2.5">Back to Homepage</Link>
+          <Link href="/" className="btn-outline text-sm px-6 py-2.5">{t.confirm.backHome}</Link>
           <Link href={`/dashboard/bookings/${booking.id}`} className="btn-secondary text-sm px-6 py-2.5 flex items-center gap-2">
-            View My Booking <ArrowRight className="h-4 w-4" />
+            {locale === "al" ? "Shiko Rezervimin" : "View My Booking"} <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link href="/fleet" className="btn-primary text-sm px-6 py-2.5">Browse More Cars</Link>
+          <Link href="/fleet" className="btn-primary text-sm px-6 py-2.5">{t.confirm.browseMore}</Link>
         </div>
       </div>
     </div>

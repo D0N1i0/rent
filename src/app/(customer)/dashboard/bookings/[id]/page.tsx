@@ -52,7 +52,14 @@ export default async function CustomerBookingDetailPage({
       },
       pickupLocation: { select: { id: true, name: true } },
       dropoffLocation: { select: { id: true, name: true } },
-      extras: { select: { id: true, name: true, total: true } },
+      extras: {
+        select: {
+          id: true,
+          name: true,
+          total: true,
+          extra: { select: { protectionCategory: true } },
+        },
+      },
       statusHistory: {
         orderBy: { createdAt: "asc" },
         select: { toStatus: true, reason: true, createdAt: true },
@@ -103,7 +110,7 @@ export default async function CustomerBookingDetailPage({
     },
     pickupLocation: { name: booking.pickupLocation.name },
     dropoffLocation: { name: booking.dropoffLocation.name },
-    extras: booking.extras.map((e) => ({ id: e.id, name: e.name, total: Number(e.total) })),
+    extras: booking.extras.map((e) => ({ id: e.id, name: e.name, total: Number(e.total), protectionCategory: e.extra?.protectionCategory ?? null })),
     statusHistory: booking.statusHistory.map((h) => ({
       toStatus: h.toStatus,
       reason: h.reason,

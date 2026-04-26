@@ -345,7 +345,14 @@ export default async function AdminBookingDetailPage({
           <div className="space-y-2">
             {booking.extras.map((be) => (
               <div key={be.id} className="flex justify-between text-sm">
-                <span className="text-gray-700">{be.name}</span>
+                <span className="flex items-center gap-2 text-gray-700">
+                  {be.extra?.protectionCategory && (
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-full font-medium shrink-0">
+                      {be.extra.protectionCategory}
+                    </span>
+                  )}
+                  {be.name}
+                </span>
                 <span className="font-medium">{formatCurrency(be.total)}</span>
               </div>
             ))}

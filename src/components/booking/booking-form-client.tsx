@@ -134,9 +134,28 @@ export function BookingFormClient({
     },
   });
 
+  const protectionExtras = useMemo(() => {
+    const order: Record<string, number> = { BASIC: 0, CDW: 1, PREMIUM: 2 };
+    return allExtras
+      .filter(e => e.protectionCategory != null)
+      .sort((a, b) => (order[a.protectionCategory!] ?? 9) - (order[b.protectionCategory!] ?? 9));
+  }, [allExtras]);
+
+  const regularExtras = useMemo(() => allExtras.filter(e => e.protectionCategory == null), [allExtras]);
+
+  const toggleProtection = (id: string) => {
+    setSelectedExtras(prev => {
+      const protectionIds = new Set(protectionExtras.map(e => e.id));
+      const withoutProtection = prev.filter(eid => !protectionIds.has(eid));
+      return prev.includes(id) ? withoutProtection : [...withoutProtection, id];
+    });
+  };
+
   const toggleExtra = (id: string) => {
     setSelectedExtras(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
   };
+
+  const selectedProtectionId = selectedExtras.find(id => protectionExtras.some(e => e.id === id)) ?? null;
 
   const onSubmit = async (data: BookingFormValues) => {
     setServerError(null);
@@ -364,17 +383,80 @@ export function BookingFormClient({
                 )}
               </div>
 
-              {/* Extras */}
-              {allExtras.length > 0 && (
+              {/* Protection & Insurance */}
+              {protectionExtras.length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
-                  <div className="flex items-center gap-2 mb-5">
+                  <div className="flex items-center gap-2 mb-1">
                     <div className="h-8 w-8 bg-navy-900 rounded-lg flex items-center justify-center">
                       <Shield className="h-4 w-4 text-white" />
                     </div>
-                    <h2 className="font-bold text-navy-900">{t.booking.extras}</h2>
+                    <div>
+                      <h2 className="font-bold text-navy-900">{locale === "al" ? "Sigurimi & Mbrojtja" : "Protection & Insurance"}</h2>
+                      <p className="text-xs text-gray-400">{locale === "al" ? "Zgjidhni nivelin e mbulimit tuaj" : "Select your coverage level — only one option applies"}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 mt-4">
+                    {protectionExtras.map((extra) => {
+                      const isSelected = selectedExtras.includes(extra.id);
+                      const tier = extra.protectionCategory as "BASIC" | "CDW" | "PREMIUM";
+                      const tierBg = { BASIC: "bg-gray-50 border-gray-200", CDW: "bg-blue-50 border-blue-200", PREMIUM: "bg-amber-50 border-amber-200" }[tier] ?? "bg-gray-50 border-gray-200";
+                      const tierBadge = { BASIC: "bg-gray-100 text-gray-700", CDW: "bg-blue-100 text-blue-800", PREMIUM: "bg-amber-100 text-amber-800" }[tier] ?? "bg-gray-100 text-gray-700";
+                      const priceLabel = Number(extra.price) === 0
+                        ? (locale === "al" ? "E përfshirë" : "Included")
+                        : `+${formatCurrency(extra.price)}${extraPricingLabels[extra.pricingType]}`;
+                      return (
+                        <button
+                          key={extra.id}
+                          type="button"
+                          onClick={() => toggleProtection(extra.id)}
+                          className={cn(
+                            "w-full flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                            isSelected ? "border-navy-900 bg-navy-50 shadow-sm" : `${tierBg} hover:border-navy-300`
+                          )}
+                        >
+                          <div className={cn(
+                            "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors",
+                            isSelected ? "bg-navy-900 border-navy-900" : "border-gray-300 bg-white"
+                          )}>
+                            {isSelected && <div className="h-2 w-2 bg-white rounded-full" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-semibold text-sm text-navy-900">{extra.name}</p>
+                                <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", tierBadge)}>{tier}</span>
+                              </div>
+                              <p className={cn("text-sm font-bold shrink-0", Number(extra.price) === 0 ? "text-green-600" : "text-crimson-600")}>
+                                {priceLabel}
+                              </p>
+                            </div>
+                            {extra.description && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{extra.description}</p>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {!selectedProtectionId && (
+                      <p className="text-xs text-gray-400 text-center pt-1 pb-0.5">
+                        {locale === "al"
+                          ? "Asnjë mbrojtje shtesë — Sigurimi i Detyrueshëm (TPL) i përfshirë sipas ligjit."
+                          : "No additional coverage selected — Third Party Liability (TPL) is included as required by law."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Add-Ons (regular extras) */}
+              {regularExtras.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="h-8 w-8 bg-navy-900 rounded-lg flex items-center justify-center">
+                      <Tag className="h-4 w-4 text-white" />
+                    </div>
+                    <h2 className="font-bold text-navy-900">{locale === "al" ? "Shtesa Opsionale" : "Optional Add-Ons"}</h2>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {allExtras.map((extra) => (
+                    {regularExtras.map((extra) => (
                       <button
                         key={extra.id}
                         type="button"
@@ -515,21 +597,39 @@ export function BookingFormClient({
                 </div>
               </div>
 
-              {/* Selected extras */}
+              {/* Selected protection + extras */}
               {selectedExtras.length > 0 && (
-                <div className="mb-4 pb-4 border-b border-gray-100">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{locale === "al" ? "Shtesa të Zgjedhura" : "Selected Extras"}</p>
-                  {selectedExtras.map(id => {
-                    const extra = allExtras.find(e => e.id === id);
+                <div className="mb-4 pb-4 border-b border-gray-100 space-y-2">
+                  {selectedProtectionId && (() => {
+                    const extra = allExtras.find(e => e.id === selectedProtectionId);
                     if (!extra) return null;
-                    const extraCost = extra.pricingType === "PER_DAY" ? Number(extra.price) * durationDays : Number(extra.price);
+                    const cost = extra.pricingType === "PER_DAY" ? Number(extra.price) * durationDays : Number(extra.price);
                     return (
-                      <div key={id} className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>{extra.name}</span>
-                        <span>{formatCurrency(extraCost)}</span>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{locale === "al" ? "Sigurimi" : "Protection"}</p>
+                        <div className="flex justify-between text-xs text-navy-700 font-medium">
+                          <span className="flex items-center gap-1"><Shield className="h-3 w-3" />{extra.name}</span>
+                          <span>{cost === 0 ? (locale === "al" ? "E përfshirë" : "Included") : formatCurrency(cost)}</span>
+                        </div>
                       </div>
                     );
-                  })}
+                  })()}
+                  {selectedExtras.filter(id => regularExtras.some(e => e.id === id)).length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{locale === "al" ? "Shtesa" : "Add-Ons"}</p>
+                      {selectedExtras.filter(id => regularExtras.some(e => e.id === id)).map(id => {
+                        const extra = allExtras.find(e => e.id === id);
+                        if (!extra) return null;
+                        const extraCost = extra.pricingType === "PER_DAY" ? Number(extra.price) * durationDays : Number(extra.price);
+                        return (
+                          <div key={id} className="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>{extra.name}</span>
+                            <span>{formatCurrency(extraCost)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

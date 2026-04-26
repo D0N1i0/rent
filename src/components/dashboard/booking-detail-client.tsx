@@ -23,6 +23,7 @@ import {
   Upload,
   CreditCard,
   Loader2,
+  Shield,
 } from "lucide-react";
 import { CancelBookingButton } from "@/components/booking/cancel-booking-button";
 import { DocumentUpload } from "@/components/booking/document-upload";
@@ -59,7 +60,7 @@ interface BookingDetailClientProps {
     };
     pickupLocation: { name: string };
     dropoffLocation: { name: string };
-    extras: { id: string; name: string; total: number }[];
+    extras: { id: string; name: string; total: number; protectionCategory?: string | null }[];
     statusHistory: { toStatus: string; reason: string | null; createdAt: Date }[];
   };
   hoursUntilPickup: number;
@@ -263,8 +264,16 @@ export function BookingDetailClient({
               {booking.extras.map((be) => (
                 <div key={be.id} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    {be.protectionCategory
+                      ? <Shield className="h-4 w-4 text-navy-600 shrink-0" />
+                      : <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                    }
                     <span className="text-gray-700">{be.name}</span>
+                    {be.protectionCategory && (
+                      <span className="text-xs bg-navy-50 text-navy-700 border border-navy-200 px-1.5 py-0.5 rounded-full font-medium">
+                        {be.protectionCategory}
+                      </span>
+                    )}
                   </div>
                   <span className="font-medium text-navy-900">{formatCurrency(be.total)}</span>
                 </div>
