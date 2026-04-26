@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ExtraPricingType } from "@prisma/client";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 interface Car {
   id: string;
@@ -432,7 +433,7 @@ export function ManualBookingForm({ cars, pickupLocations, dropoffLocations, ext
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="form-input" />
+            <PhoneInput value={phone} onChange={setPhone} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">ID / Passport Number *</label>

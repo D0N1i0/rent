@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requiredPhoneSchema } from "@/lib/validations/phone";
 
 // Admin booking schema — no acceptTerms/acceptCancellation, no 2-hour lead enforcement.
 // Admins can create bookings for walk-in customers and past/same-day pickups.
@@ -16,7 +17,7 @@ export const adminBookingSchema = z.object({
   firstName: z.string().min(2).max(50).refine((v) => v.trim().length >= 2, "First name cannot be blank"),
   lastName: z.string().min(2).max(50).refine((v) => v.trim().length >= 2, "Last name cannot be blank"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(7).max(25).regex(/^\+?\d[\d\s\-\(\)]{5,}$/, "Invalid phone number format"),
+  phone: requiredPhoneSchema,
   idNumber: z.string().min(3).max(50),
   licenseNumber: z.string().min(3).max(50),
   nationality: z.string().max(80).optional().or(z.literal("")),

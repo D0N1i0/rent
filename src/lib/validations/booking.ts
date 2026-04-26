@@ -1,6 +1,7 @@
 import { z } from "zod";
 // src/lib/validations/booking.ts
-import { buildBookingDateTimes, validateBookingWindow } from "@/lib/booking-rules";
+import { buildBookingDateTimes, validateBookingWindow } from "@/lib/booking-window";
+import { optionalPhoneSchema, requiredPhoneSchema } from "@/lib/validations/phone";
 
 export const bookingSchema = z
   .object({
@@ -22,11 +23,7 @@ export const bookingSchema = z
       .max(50)
       .refine((v) => v.trim().length >= 2, "Last name cannot be blank"),
     email: z.string().email("Invalid email address"),
-    phone: z
-      .string()
-      .min(7, "Phone number must be at least 7 characters")
-      .max(25)
-      .regex(/^\+?\d[\d\s\-\(\)]{5,}$/, "Invalid phone number format"),
+    phone: requiredPhoneSchema,
     idNumber: z.string().min(3, "ID/Passport number is required").max(50),
     licenseNumber: z.string().min(3, "Driving licence number is required").max(50),
     nationality: z.string().max(80).optional().or(z.literal("")),
@@ -100,7 +97,7 @@ export type CarFormValues = z.infer<typeof carSchema>;
 export const contactSchema = z.object({
   name: z.string().min(2, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
-  phone: z.string().max(20).optional().or(z.literal("")),
+  phone: optionalPhoneSchema,
   subject: z.string().max(200).optional().or(z.literal("")),
   message: z.string().min(10, "Message must be at least 10 characters").max(2000),
 });

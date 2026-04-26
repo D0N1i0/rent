@@ -2,13 +2,14 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contactSchema } from "@/lib/validations/booking";
 import { z } from "zod";
 import { Phone, Mail, MapPin, Clock, MessageCircle, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT, useLanguage } from "@/lib/i18n/context";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 type ContactValues = z.infer<typeof contactSchema>;
 
@@ -32,7 +33,7 @@ export function ContactPageClient({
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ContactValues>({
+  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
     mode: "onTouched",
   });
@@ -146,7 +147,17 @@ export function ContactPageClient({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.phone}</label>
-                    <input type="tel" placeholder="+383 44 000 000" className="form-input" {...register("phone")} />
+                    <Controller
+                      name="phone"
+                      control={control}
+                      render={({ field }) => (
+                        <PhoneInput
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          error={errors.phone?.message}
+                        />
+                      )}
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{t.contactFaq.subject}</label>

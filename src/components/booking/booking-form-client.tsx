@@ -11,7 +11,7 @@ import { AlertCircle, Loader2, Check, User, Car, MapPin, Calendar, ChevronRight,
 import { bookingSchema, type BookingFormValues } from "@/lib/validations/booking";
 import { formatCurrency } from "@/lib/utils";
 import { buildPriceBreakdown, buildExtraLineItems, KOSOVO_VAT_RATE } from "@/lib/pricing";
-import { buildBookingDateTimes, getDurationDays } from "@/lib/booking-rules";
+import { buildBookingDateTimes, getDurationDays } from "@/lib/booking-window";
 import type { Car as CarType, CarImage, CarCategory, Extra, Location } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/ui/phone-input";

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isAdminRole, getSessionRole } from "@/lib/authz";
 import { z } from "zod";
+import { optionalPhoneSchema } from "@/lib/validations/phone";
 
 async function requireAdmin() {
   const session = await auth();
@@ -17,7 +18,7 @@ const patchSchema = z.object({
   isActive: z.boolean().optional(),
   firstName: z.string().min(2).max(50).optional().or(z.literal("")),
   lastName: z.string().min(2).max(50).optional().or(z.literal("")),
-  phone: z.string().max(25).optional().nullable(),
+  phone: z.union([optionalPhoneSchema, z.null()]).optional(),
   dateOfBirth: z.string().optional().nullable().or(z.literal("")),
   nationality: z.string().max(80).optional().nullable().or(z.literal("")),
   idNumber: z.string().max(50).optional().nullable().or(z.literal("")),

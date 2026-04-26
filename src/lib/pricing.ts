@@ -3,13 +3,18 @@
 // All pricing logic lives here. Nothing in API routes should compute prices
 // directly — they must call these functions.
 
-import type { Car, Extra, Location, SeasonalPricing } from "@prisma/client";
-import { ExtraPricingType } from "@prisma/client";
-import { getDurationDays, getSeasonalRate } from "@/lib/booking-rules";
-import { toNumber } from "@/lib/money";
+import type { Car, Extra, ExtraPricingType, Location, SeasonalPricing } from "@prisma/client";
+import { getDurationDays, getSeasonalRate } from "@/lib/booking-window";
 
 // Kosovo VAT rate – 18%
 export const KOSOVO_VAT_RATE = 0.18;
+
+function toNumber(value: number | string | { toNumber(): number } | null | undefined): number {
+  if (value == null) return 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return parseFloat(value) || 0;
+  return value.toNumber();
+}
 
 export interface PriceBreakdown {
   durationDays: number;

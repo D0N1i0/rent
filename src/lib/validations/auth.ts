@@ -1,23 +1,9 @@
 // src/lib/validations/auth.ts
 import { z } from "zod";
+import { optionalPhoneSchema } from "@/lib/validations/phone";
 
 // ─── Shared field validators ──────────────────────────────────────────────────
 
-/** Phone: must start with + (dial code) followed by 6–15 digits/spaces. */
-const phoneSchema = z
-  .string()
-  .regex(/^\+\d[\d\s]{5,18}$/, "Enter a valid phone number (include country code, e.g. +383 44 123 456)")
-  .max(25);
-
-const optionalPhoneSchema = z
-  .string()
-  .max(25)
-  .refine(
-    (v) => !v || /^\+\d[\d\s]{5,18}$/.test(v.trim()),
-    "Enter a valid phone number with country code"
-  )
-  .optional()
-  .or(z.literal(""));
 
 /** DOB: must be at least 18 years ago from now. */
 function isAtLeast18(dateStr: string): boolean {

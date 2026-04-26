@@ -7,12 +7,13 @@ import { randomBytes } from "crypto";
 import { addHours } from "date-fns";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailVerificationEmail } from "@/lib/email";
+import { optionalPhoneSchema } from "@/lib/validations/phone";
 
 const schema = z.object({
   firstName: z.string().min(2).max(50),
   lastName: z.string().min(2).max(50),
   email: z.string().email(),
-  phone: z.string().min(7).max(25).optional().or(z.literal("")),
+  phone: optionalPhoneSchema,
   nationality: z.string().max(80).optional().or(z.literal("")),
   password: z.string().min(8).max(100).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/),
 });
