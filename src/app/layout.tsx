@@ -39,6 +39,9 @@ export const metadata: Metadata = {
     "AutoKos",
   ],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
@@ -50,6 +53,21 @@ export const metadata: Metadata = {
     locale: "en_US",
     siteName: "AutoKos",
     description: "Kosovo's most trusted car rental — Vetura me qira Prishtinë. Airport pickup, modern fleet, transparent pricing.",
+    // TODO before launch: replace with a proper 1200×630 branded OG image
+    images: [
+      {
+        url: "/images/cars/mercedes-glc-2023-1.jpg",
+        width: 1200,
+        height: 630,
+        alt: "AutoKos — Premium Car Rental in Kosovo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AutoKos — Car Rental Kosovo",
+    description: "Kosovo's most trusted car rental. Airport pickup, modern fleet, transparent pricing.",
+    images: ["/images/cars/mercedes-glc-2023-1.jpg"],
   },
 };
 

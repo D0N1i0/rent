@@ -36,6 +36,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },

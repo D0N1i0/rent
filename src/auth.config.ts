@@ -5,7 +5,7 @@ import type { NextAuthConfig } from "next-auth";
 import type { Role } from "@prisma/client";
 
 export const authConfig = {
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 24 * 60 * 60 }, // 24-hour JWT lifetime
   pages: {
     signIn: "/login",
     error: "/login",

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-ip";
 import { z } from "zod";
 
 async function requireAdmin() {
@@ -51,6 +52,18 @@ export async function POST(req: NextRequest) {
       validUntil: parsed.data.validUntil ? new Date(parsed.data.validUntil) : null,
     },
   });
+
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "OFFER_CREATED",
+      entity: "Offer",
+      entityId: offer.id,
+      ipAddress: getClientIp(req),
+      details: { title: offer.title, code: offer.code, discountPct: offer.discountPct, discountAmt: offer.discountAmt },
+    },
+  });
+
   return NextResponse.json({ offer }, { status: 201 });
 }
 
@@ -58,6 +71,6 @@ export async function GET() {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const offers = await prisma.offer.findMany({ orderBy: { sortOrder: "asc" } });
+  const offers = await prisma.offer.findMany({ orderBy: { sortOrder: "asc" }, take: 500 });
   return NextResponse.json({ offers });
 }

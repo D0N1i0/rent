@@ -1,11 +1,12 @@
 // src/app/api/admin/refunds/route.ts
 // Admin-initiated Stripe refund.
-// Security: admin-only, server recomputes max-refundable from DB — never trusts
-// the client-supplied amount beyond "is it a positive number?".
+// Security: ADMIN-only (not STAFF), server recomputes max-refundable from DB —
+// never trusts the client-supplied amount beyond "is it a positive number?".
+// Arithmetic is done in integer cents to avoid floating-point accumulation across
+// multiple partial refunds.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
 import { stripe, eurosToCents } from "@/lib/stripe";
 import { toNumber } from "@/lib/money";
@@ -20,7 +21,8 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user || !isAdminRole(session.user.role as string)) {
+  // Refunds are restricted to ADMIN role only — STAFF cannot issue refunds.
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -70,22 +72,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const totalAmount = toNumber(booking.totalAmount);
-  const alreadyRefunded = toNumber(booking.amountRefunded);
-  const maxRefundable = +(totalAmount - alreadyRefunded).toFixed(2);
+  // Work entirely in integer cents to prevent floating-point accumulation across
+  // multiple partial refunds (e.g. 3 × €33.33 summing to €99.98 instead of €99.99).
+  const totalCents = Math.round(toNumber(booking.totalAmount) * 100);
+  const alreadyRefundedCents = Math.round(toNumber(booking.amountRefunded) * 100);
+  const requestedCents = eurosToCents(amount); // Math.round(amount * 100)
+  const maxRefundableCents = totalCents - alreadyRefundedCents;
 
-  if (amount > maxRefundable) {
+  if (maxRefundableCents <= 0) {
     return NextResponse.json(
-      {
-        error: `Refund amount €${amount.toFixed(2)} exceeds the refundable balance of €${maxRefundable.toFixed(2)}.`,
-      },
+      { error: "This booking has already been fully refunded." },
       { status: 400 }
     );
   }
 
-  if (maxRefundable <= 0) {
+  if (requestedCents > maxRefundableCents) {
     return NextResponse.json(
-      { error: "This booking has already been fully refunded." },
+      {
+        error: `Refund amount €${amount.toFixed(2)} exceeds the refundable balance of €${(maxRefundableCents / 100).toFixed(2)}.`,
+      },
       { status: 400 }
     );
   }
@@ -96,7 +101,7 @@ export async function POST(req: NextRequest) {
     stripeRefund = await stripe.refunds.create(
       {
         payment_intent: booking.stripePaymentIntentId,
-        amount: eurosToCents(amount),
+        amount: requestedCents, // already in cents, computed above
         reason: "requested_by_customer",
         metadata: {
           bookingId: booking.id,
@@ -126,8 +131,10 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Persist refund in one transaction ────────────────────────────────────
-  const newAmountRefunded = +(alreadyRefunded + amount).toFixed(2);
-  const isFullRefund = newAmountRefunded >= totalAmount - 0.001; // float-safe comparison
+  // Keep arithmetic in cents; convert back to euros only for DB storage.
+  const newRefundedCents = alreadyRefundedCents + requestedCents;
+  const newAmountRefunded = newRefundedCents / 100;
+  const isFullRefund = newRefundedCents >= totalCents;
   const newPaymentStatus = isFullRefund ? "REFUNDED" : "PAID";
 
   await prisma.$transaction(async (tx) => {

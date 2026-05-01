@@ -119,9 +119,8 @@ export async function POST(req: NextRequest) {
       extraLineItems = buildExtraLineItems(extraRecords, selectedExtraIds, tempDuration);
     }
 
-    const normalizedCouponCode = typeof body.couponCode === "string"
-      ? body.couponCode.trim().toUpperCase().slice(0, 50)
-      : "";
+    // couponCode is validated and normalized (trimmed + uppercased) by the Zod schema.
+    const normalizedCouponCode = data.couponCode ?? "";
 
     let couponDiscount = 0;
     if (normalizedCouponCode) {
@@ -411,17 +410,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ bookings, total, page, limit });
   }
 
-  // Customer — own bookings only
-  const bookings = await prisma.booking.findMany({
-    where: { userId: session.user.id },
-    include: {
-      car: { include: { images: { where: { isPrimary: true } } } },
-      pickupLocation: true,
-      dropoffLocation: true,
-      extras: { include: { extra: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  // Customer — own bookings only, paginated
+  const page = Math.max(1, Number(new URL(req.url).searchParams.get("page") ?? 1));
+  const limit = Math.min(50, Math.max(1, Number(new URL(req.url).searchParams.get("limit") ?? 20)));
 
-  return NextResponse.json({ bookings });
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where: { userId: session.user.id },
+      include: {
+        car: { include: { images: { where: { isPrimary: true } } } },
+        pickupLocation: true,
+        dropoffLocation: true,
+        extras: { include: { extra: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.booking.count({ where: { userId: session.user.id } }),
+  ]);
+
+  return NextResponse.json({ bookings, total, page, limit });
 }

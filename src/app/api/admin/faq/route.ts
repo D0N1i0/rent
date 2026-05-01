@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-ip";
 import { z } from "zod";
 
 async function requireAdmin() {
@@ -31,12 +32,24 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });
 
   const item = await prisma.faqItem.create({ data: parsed.data });
+
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "FAQ_CREATED",
+      entity: "FaqItem",
+      entityId: item.id,
+      ipAddress: getClientIp(req),
+      details: { question: item.question.slice(0, 100), category: item.category },
+    },
+  });
+
   return NextResponse.json({ item }, { status: 201 });
 }
 
 export async function GET() {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const items = await prisma.faqItem.findMany({ orderBy: { sortOrder: "asc" } });
+  const items = await prisma.faqItem.findMany({ orderBy: { sortOrder: "asc" }, take: 500 });
   return NextResponse.json({ items });
 }

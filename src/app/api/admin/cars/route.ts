@@ -106,14 +106,23 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const cars = await prisma.car.findMany({
-    include: { category: true, images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] } },
-    orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }],
-  });
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const limit = Math.min(200, Math.max(1, Number(searchParams.get("limit") ?? 200)));
 
-  return NextResponse.json({ cars });
+  const [cars, total] = await Promise.all([
+    prisma.car.findMany({
+      include: { category: true, images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] } },
+      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.car.count(),
+  ]);
+
+  return NextResponse.json({ cars, total, page, limit });
 }

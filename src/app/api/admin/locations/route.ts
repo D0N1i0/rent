@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-ip";
 import { z } from "zod";
 import { slugify } from "@/lib/utils";
 
@@ -47,12 +48,23 @@ export async function POST(req: NextRequest) {
     data: { ...parsed.data, slug, address: parsed.data.address || null, description: parsed.data.description || null },
   });
 
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "LOCATION_CREATED",
+      entity: "Location",
+      entityId: location.id,
+      ipAddress: getClientIp(req),
+      details: { name: location.name, city: location.city, isAirport: location.isAirport },
+    },
+  });
+
   return NextResponse.json({ location }, { status: 201 });
 }
 
 export async function GET() {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locations = await prisma.location.findMany({ orderBy: { sortOrder: "asc" } });
+  const locations = await prisma.location.findMany({ orderBy: { sortOrder: "asc" }, take: 500 });
   return NextResponse.json({ locations });
 }

@@ -28,6 +28,12 @@ export const bookingSchema = z
     licenseNumber: z.string().min(3, "Driving licence number is required").max(50),
     nationality: z.string().max(80).optional().or(z.literal("")),
     selectedExtras: z.array(z.string()).default([]),
+    couponCode: z
+      .string()
+      .max(50, "Coupon code cannot exceed 50 characters")
+      .optional()
+      .or(z.literal(""))
+      .transform((v) => (typeof v === "string" ? v.trim().toUpperCase() : "")),
     specialRequests: z.string().max(500).optional().or(z.literal("")),
     acceptTerms: z.boolean().refine((val) => val === true, {
       message: "You must accept the rental terms and conditions",

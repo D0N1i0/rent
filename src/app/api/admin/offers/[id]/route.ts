@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-ip";
 import { z } from "zod";
 
 async function requireAdmin() {
@@ -67,6 +68,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           : undefined,
     },
   });
+
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "OFFER_UPDATED",
+      entity: "Offer",
+      entityId: offer.id,
+      ipAddress: getClientIp(req),
+      details: { title: offer.title, code: offer.code, isActive: offer.isActive },
+    },
+  });
+
   return NextResponse.json({ offer });
 }
 
@@ -77,6 +90,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const rl = await checkAdminRateLimit(req, session.user.id, "write");
   if (rl) return NextResponse.json(rl.body, { status: rl.status });
 
+  const offer = await prisma.offer.findUnique({ where: { id }, select: { title: true, code: true } });
   await prisma.offer.delete({ where: { id } });
+
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "OFFER_DELETED",
+      entity: "Offer",
+      entityId: id,
+      ipAddress: getClientIp(req),
+      details: { title: offer?.title, code: offer?.code },
+    },
+  });
+
   return NextResponse.json({ success: true });
 }

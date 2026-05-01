@@ -74,12 +74,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const files = await prisma.mediaFile.findMany({ orderBy: { createdAt: "desc" } });
-  return NextResponse.json({ files });
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? 50)));
+
+  const [files, total] = await Promise.all([
+    prisma.mediaFile.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.mediaFile.count(),
+  ]);
+
+  return NextResponse.json({ files, total, page, limit });
 }
 
 export async function DELETE(req: NextRequest) {

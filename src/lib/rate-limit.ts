@@ -24,10 +24,16 @@ function getRedis(): Redis | null {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
     if (!_upstashWarned && process.env.NODE_ENV === "production") {
-      console.warn(
-        "[rate-limit] WARNING: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is not set. " +
-        "Rate limiting is using per-instance in-memory fallback, which is NOT effective on " +
-        "multi-instance Vercel deployments. Set Upstash env vars in the Vercel project settings."
+      // This fires once per cold-start in production. Each Vercel function instance has its
+      // own memory — without Redis, an attacker distributing requests across instances bypasses
+      // all rate limits entirely. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in
+      // Vercel project settings before accepting real traffic.
+      console.error(
+        "[rate-limit] CRITICAL: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is not set. " +
+        "Rate limiting is using per-instance in-memory fallback which is INEFFECTIVE on " +
+        "multi-instance Vercel deployments. Distributed brute-force attacks (login, booking, " +
+        "coupon enumeration) cannot be blocked without Redis. " +
+        "ACTION REQUIRED: Add Upstash env vars to Vercel project settings immediately."
       );
       _upstashWarned = true;
     }

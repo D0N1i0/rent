@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-ip";
 import { z } from "zod";
 
 async function requireAdmin() {
@@ -42,6 +43,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data: { ...parsed.data, address: parsed.data.address || null, description: parsed.data.description || null },
   });
 
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "LOCATION_UPDATED",
+      entity: "Location",
+      entityId: location.id,
+      ipAddress: getClientIp(req),
+      details: { name: location.name, city: location.city, isActive: location.isActive },
+    },
+  });
+
   return NextResponse.json({ location });
 }
 
@@ -60,6 +72,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: `Cannot delete: ${bookingCount} active booking(s) use this location.` }, { status: 409 });
   }
 
+  const location = await prisma.location.findUnique({ where: { id }, select: { name: true, city: true } });
   await prisma.location.delete({ where: { id } });
+
+  await prisma.activityLog.create({
+    data: {
+      userId: session.user.id,
+      action: "LOCATION_DELETED",
+      entity: "Location",
+      entityId: id,
+      ipAddress: getClientIp(req),
+      details: { name: location?.name, city: location?.city },
+    },
+  });
+
   return NextResponse.json({ success: true });
 }

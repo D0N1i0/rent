@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getSessionRole, isAdminRole } from "@/lib/authz";
 import { checkAdminRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-ip";
 import { carSchema } from "@/lib/validations/booking";
 import { slugify } from "@/lib/utils";
 
@@ -96,6 +97,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           action: "CAR_UPDATED",
           entity: "Car",
           entityId: updated.id,
+          ipAddress: getClientIp(req),
           details: { name: updated.name, imageCount: imageUrls.length },
         },
       });
@@ -127,6 +129,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
     const car = await prisma.car.update({ where: { id }, data });
+
+    await prisma.activityLog.create({
+      data: {
+        userId: session.user.id,
+        action: "CAR_PATCHED",
+        entity: "Car",
+        entityId: car.id,
+        ipAddress: getClientIp(req),
+        details: { name: car.name, changes: data },
+      },
+    });
+
     return NextResponse.json({ car });
   } catch (error) {
     console.error("Patch car error:", error);
@@ -164,6 +178,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
           action: "CAR_DELETED",
           entity: "Car",
           entityId: id,
+          ipAddress: getClientIp(req),
           details: { name: car?.name },
         },
       });
