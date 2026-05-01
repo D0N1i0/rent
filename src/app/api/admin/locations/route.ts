@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const locations = await prisma.location.findMany({ orderBy: { sortOrder: "asc" } });
   return NextResponse.json({ locations });
 }

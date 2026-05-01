@@ -18,10 +18,21 @@ export interface RateLimitResult {
 
 let _redis: Redis | null = null;
 
+let _upstashWarned = false;
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
+  if (!url || !token) {
+    if (!_upstashWarned && process.env.NODE_ENV === "production") {
+      console.warn(
+        "[rate-limit] WARNING: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is not set. " +
+        "Rate limiting is using per-instance in-memory fallback, which is NOT effective on " +
+        "multi-instance Vercel deployments. Set Upstash env vars in the Vercel project settings."
+      );
+      _upstashWarned = true;
+    }
+    return null;
+  }
   if (!_redis) {
     _redis = new Redis({ url, token });
   }

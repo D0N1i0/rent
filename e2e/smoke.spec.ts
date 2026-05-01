@@ -104,3 +104,29 @@ test("admin panel redirects unauthenticated users to login", async ({ page }) =>
   await page.goto("/admin/dashboard");
   await expect(page).toHaveURL(/login/);
 });
+
+// ─── Security: admin API endpoints must not be publicly accessible ────────────
+
+test("GET /api/admin/extras requires authentication", async ({ request }) => {
+  const res = await request.get("/api/admin/extras");
+  expect(res.status()).toBe(403);
+});
+
+test("GET /api/admin/locations requires authentication", async ({ request }) => {
+  const res = await request.get("/api/admin/locations");
+  expect(res.status()).toBe(403);
+});
+
+test("GET /api/admin/faq requires authentication", async ({ request }) => {
+  const res = await request.get("/api/admin/faq");
+  expect(res.status()).toBe(403);
+});
+
+// ─── Terms page must not contain old placeholder phone ──────────────────────
+
+test("/terms does not contain old placeholder phone number", async ({ page }) => {
+  await page.goto("/terms");
+  const content = await page.textContent("body");
+  expect(content).not.toContain("+383 44 123 456");
+  expect(content).not.toContain("044 123 456");
+});

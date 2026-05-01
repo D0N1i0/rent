@@ -61,7 +61,7 @@ export function HeroSection({ locations, content, settings, activeCarCount }: He
   const title = content.hero_title_en || `Drive Kosovo in Style with ${settings.businessName}`;
   const subtitle = content.hero_subtitle_en || `Premium car rental from Prishtina Airport and across Kosovo. Transparent pricing, clean vehicles, and direct support from ${settings.businessName}.`;
   const badge = content.hero_badge || `${settings.supportLabel} · Airport Pickup`;
-  const statCustomers = content.hero_stat_customers || "500+";
+  const statCustomers = content.hero_stat_customers || "5★ Rated";
   const statFleet = content.hero_stat_fleet || (activeCarCount != null ? String(activeCarCount) : "10+");
   const statLocations = content.hero_stat_locations || String(locations.length || 7);
 

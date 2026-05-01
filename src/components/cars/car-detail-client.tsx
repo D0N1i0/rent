@@ -597,6 +597,12 @@ export function CarDetailClient({ car, extras, locations, relatedCars, searchPar
                 </div>
               )}
 
+              {!booking.pickupLocationId && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2 text-center">
+                  {locale === "al" ? "⬆ Zgjidh vendndodhjen e marrjes për të vazhduar" : "⬆ Select a pickup location to continue"}
+                </p>
+              )}
+
               {/* On mobile, the sticky bottom bar is the primary CTA — only show here on desktop */}
               <button
                 onClick={handleBookNow}

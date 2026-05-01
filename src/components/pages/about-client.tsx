@@ -30,13 +30,13 @@ export function AboutClient() {
     stats: isAl
       ? [
           { icon: Shield, label: "Flotë e Siguruar", desc: "Çdo makinë plotësisht e mbuluar" },
-          { icon: Star, label: "Shërbim 5★", desc: "Vlerësuar nga 500+ klientë" },
+          { icon: Star, label: "Shërbim 5★", desc: "Vlerësim 5★ nga klientët" },
           { icon: Users, label: "Të Gjithë Klientët", desc: "Lokalë, turistë & diaspora" },
           { icon: MapPin, label: "7 Lokacione", desc: "Nëpër të gjithë Kosovën" },
         ]
       : [
           { icon: Shield, label: "Insured Fleet", desc: "Every car fully covered" },
-          { icon: Star, label: "5★ Service", desc: "Rated by 500+ customers" },
+          { icon: Star, label: "5★ Service", desc: "5★ rated by our customers" },
           { icon: Users, label: "All Customers", desc: "Locals, tourists & diaspora" },
           { icon: MapPin, label: "7 Locations", desc: "Across all Kosovo" },
         ],

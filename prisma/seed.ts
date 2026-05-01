@@ -11,13 +11,13 @@ async function main() {
   const adminPassword = await bcrypt.hash("Admin@123456", 12);
   const admin = await prisma.user.upsert({
     where: { email: "admin@autokos.com" },
-    update: {},
+    update: { phone: "+383 49 181 884" },
     create: {
       email: "admin@autokos.com",
       passwordHash: adminPassword,
       firstName: "Arben",
       lastName: "Krasniqi",
-      phone: "+383 44 123 456",
+      phone: "+383 49 181 884",
       role: Role.ADMIN,
       isActive: true,
     },
@@ -639,7 +639,7 @@ async function main() {
         minRentalDays: 7,
         validFrom: new Date("2025-06-01"),
         validUntil: new Date("2025-08-31"),
-        isActive: true,
+        isActive: false,
         sortOrder: 1,
       },
       {
@@ -734,7 +734,7 @@ These Terms are governed by the laws of the Republic of Kosovo. Any disputes sha
 
 ## 10. Contact
 
-AutoKos | Rr. Nënë Tereza, Prishtinë, Kosovo | Tel: +383 44 123 456 | Email: legal@autokos.com`,
+AutoKos | Rr. Nënë Tereza, Nr. 45, Prishtinë 10000, Kosovo | Tel: +383 49 181 884 | Email: info@autokos.com`,
     },
   });
 
@@ -880,13 +880,13 @@ Late returns of more than 60 minutes incur an additional half-day charge. Please
     { key: "whatsapp_number", value: "+38349181884", group: "contact", label: "WhatsApp Number", type: "text" },
     { key: "business_nipt", value: "", group: "business", label: "Business NIPT (Tax ID)", type: "text" },
     { key: "support_hours", value: "24/7 — We are always here for you", group: "contact", label: "Support Hours", type: "text" },
-    { key: "logo_url", value: "/images/logo.png", group: "branding", label: "Logo URL", type: "image" },
+    { key: "logo_url", value: "", group: "branding", label: "Logo URL", type: "image" },
     { key: "favicon_url", value: "/images/favicon.ico", group: "branding", label: "Favicon URL", type: "image" },
     { key: "primary_color", value: "#0F1E3C", group: "branding", label: "Primary Color", type: "text" },
     { key: "accent_color", value: "#E63B2E", group: "branding", label: "Accent Color", type: "text" },
-    { key: "social_facebook", value: "https://facebook.com/autokos", group: "social", label: "Facebook URL", type: "url" },
-    { key: "social_instagram", value: "https://instagram.com/autokos", group: "social", label: "Instagram URL", type: "url" },
-    { key: "social_tiktok", value: "https://tiktok.com/@autokos", group: "social", label: "TikTok URL", type: "url" },
+    { key: "social_facebook", value: "", group: "social", label: "Facebook URL", type: "url" },
+    { key: "social_instagram", value: "", group: "social", label: "Instagram URL", type: "url" },
+    { key: "social_tiktok", value: "", group: "social", label: "TikTok URL", type: "url" },
     { key: "social_youtube", value: "", group: "social", label: "YouTube URL", type: "url" },
     { key: "google_maps_embed", value: "https://maps.google.com/?q=Prishtina+Kosovo", group: "contact", label: "Google Maps Link", type: "url" },
     { key: "currency_symbol", value: "€", group: "business", label: "Currency Symbol", type: "text" },
@@ -925,6 +925,7 @@ Late returns of more than 60 minutes incur an additional half-day charge. Please
     { key: "how_3_body", value: "Meet us at your chosen location — including Prishtina Airport. We'll hand you the keys and you're ready to go.", group: "homepage", label: "Step 3 Body", type: "textarea" },
     { key: "how_4_title", value: "Drive & Enjoy", group: "homepage", label: "Step 4 Title", type: "text" },
     { key: "how_4_body", value: "Explore Kosovo freely with full insurance and 24/7 support always available on WhatsApp or phone.", group: "homepage", label: "Step 4 Body", type: "textarea" },
+    { key: "hero_stat_customers", value: "5★ Rated", group: "homepage", label: "Hero Stat: Customers Label", type: "text" },
   ];
 
   for (const setting of settings) {

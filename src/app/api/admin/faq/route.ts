@@ -35,6 +35,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const items = await prisma.faqItem.findMany({ orderBy: { sortOrder: "asc" } });
   return NextResponse.json({ items });
 }
