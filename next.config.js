@@ -23,8 +23,8 @@ const securityHeaders = [
       // API calls: own origin + Stripe + Cloudinary.
       // Sentry errors are tunnelled through /monitoring (same origin) so *.ingest.sentry.io is not needed.
       "connect-src 'self' api.stripe.com res.cloudinary.com",
-      // Images: own origin + Cloudinary CDN + Unsplash (seed images)
-      "img-src 'self' data: blob: res.cloudinary.com images.unsplash.com",
+      // Images: own origin + Cloudinary CDN
+      "img-src 'self' data: blob: res.cloudinary.com",
       // Fonts: Google Fonts
       "font-src 'self' fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
@@ -40,20 +40,11 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
-      { protocol: "https", hostname: "images.unsplash.com" },
     ],
     unoptimized: process.env.NODE_ENV === "development",
   },
   serverExternalPackages: ["bcryptjs", "nodemailer", "cloudinary"],
   reactStrictMode: true,
-  serverRuntimeConfig: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    EMAIL_SERVER_PASSWORD: process.env.EMAIL_SERVER_PASSWORD,
-  },
-  publicRuntimeConfig: {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  },
   async headers() {
     return [
       {

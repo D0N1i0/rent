@@ -41,12 +41,17 @@ export async function GET(
   const isAdmin = isAdminRole(session.user.role as string);
 
   if (!isAdmin) {
+    // Match the exact legacy path that was stored in the DB when the file was
+    // uploaded through this route (e.g. "/api/uploads/docs/abc123.pdf").
+    // Using endsWith rather than contains prevents a partial-name match where
+    // "john.pdf" would satisfy a contains check against "license-john.pdf".
+    const legacyPath = `/api/uploads/docs/${filename}`;
     const booking = await prisma.booking.findFirst({
       where: {
         userId: session.user.id,
         OR: [
-          { documentLicenseUrl: { contains: filename } },
-          { documentIdUrl: { contains: filename } },
+          { documentLicenseUrl: { endsWith: legacyPath } },
+          { documentIdUrl: { endsWith: legacyPath } },
         ],
       },
       select: { id: true },

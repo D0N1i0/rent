@@ -109,17 +109,17 @@ test("admin panel redirects unauthenticated users to login", async ({ page }) =>
 
 test("GET /api/admin/extras requires authentication", async ({ request }) => {
   const res = await request.get("/api/admin/extras");
-  expect(res.status()).toBe(403);
+  expect(res.status()).toBe(401);
 });
 
 test("GET /api/admin/locations requires authentication", async ({ request }) => {
   const res = await request.get("/api/admin/locations");
-  expect(res.status()).toBe(403);
+  expect(res.status()).toBe(401);
 });
 
 test("GET /api/admin/faq requires authentication", async ({ request }) => {
   const res = await request.get("/api/admin/faq");
-  expect(res.status()).toBe(403);
+  expect(res.status()).toBe(401);
 });
 
 // ─── Terms page must not contain old placeholder phone ──────────────────────

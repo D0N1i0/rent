@@ -14,14 +14,14 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   // Two-tier limit:
-  //   1. Overall calls — generous for genuine typing
-  //   2. Invalid-code attempts — strict, to kill brute-force enumeration
-  // A legit customer rarely sees more than a couple of misses before typing it
-  // right or giving up; an attacker needs thousands of attempts to find a code.
+  //   1. Overall calls — 8 per 10 minutes; a real user needs at most 2-3 attempts.
+  //   2. Invalid-code attempts — 3 per hour; makes bulk enumeration impractical.
+  // Previous limits (20/5 min overall, 8 invalid/hr) allowed ~192 misses/day per
+  // IP, which is low enough for a patient attacker to probe hundreds of codes/day.
   const ip = getClientIp(req);
-  const rl = await rateLimit(`coupon-validate:${ip}`, 20, 5 * 60 * 1000);
+  const rl = await rateLimit(`coupon-validate:${ip}`, 8, 10 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ valid: false, error: "Too many attempts" }, { status: 429 });
+    return NextResponse.json({ valid: false, error: "Too many attempts. Please try again later." }, { status: 429 });
   }
 
   try {
@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (!offer) {
-      // Count invalid attempts separately — 8 misses per hour is plenty for a
-      // real user and far below what brute-force needs.
-      const miss = await rateLimit(`coupon-invalid:${ip}`, 8, 60 * 60 * 1000);
+      // Count invalid attempts separately — 3 misses per hour keeps enumeration
+      // impractical while being sufficient for any real user.
+      const miss = await rateLimit(`coupon-invalid:${ip}`, 3, 60 * 60 * 1000);
       if (!miss.allowed) {
         return NextResponse.json(
           { valid: false, error: "Too many invalid attempts. Please try again later." },

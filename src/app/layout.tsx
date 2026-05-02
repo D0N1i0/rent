@@ -22,7 +22,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: {
     default: "AutoKos — Makina me Qira Kosovo | Car Rental Kosovo",
-    template: "%s | AutoKos Kosovo",
+    template: "%s",
   },
   description:
     "Kosovo's most trusted car rental — Vetura me qira Prishtinë. Modern fleet, airport pickup, transparent pricing. Book online in minutes.",
@@ -38,7 +38,20 @@ export const metadata: Metadata = {
     "qira vetura Kosovë",
     "AutoKos",
   ],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ??
+      (process.env.NODE_ENV === "production"
+        ? (() => {
+            console.error(
+              "[AutoKos] MISSING ENV: NEXT_PUBLIC_APP_URL is not set. " +
+              "All OG images, Twitter card images, and canonical URLs will resolve to " +
+              "https://autokos.com (production fallback). " +
+              "ACTION REQUIRED: Set NEXT_PUBLIC_APP_URL in Vercel project settings."
+            );
+            return "https://autokos.com";
+          })()
+        : "http://localhost:3000")
+  ),
   alternates: {
     canonical: "/",
   },
